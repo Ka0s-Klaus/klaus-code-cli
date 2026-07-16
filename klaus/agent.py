@@ -14,6 +14,7 @@ from rich.syntax import Syntax
 
 from .config import KlausConfig
 from .context import compact_messages, load_project_context
+from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS
 
@@ -36,8 +37,9 @@ async def run_agent_loop(
 ) -> int:
     """Loop principal del agente.
 
+    - Inicializa servidores MCP configurados (si hay).
     - Si plan_mode está activo: genera plan → pide confirmación → ejecuta.
-    - Envía el prompt inicial con las tools disponibles.
+    - Envía el prompt inicial con las tools disponibles (built-in + MCP).
     - Si el modelo llama tools, las ejecuta y devuelve los resultados.
     - Continúa hasta que stop_reason sea 'end_turn' o se agoten los turnos.
     - Gestiona el contexto: tracking de tokens y auto-compact cuando se aproxima el límite.
@@ -45,14 +47,47 @@ async def run_agent_loop(
     """
     cwd = project_root or Path.cwd()
 
-    # Cargar contexto del proyecto (CLAUS.md / CLAUDE.md)
+    # Cargar contexto del proyecto (CLAUDE.md / CLAUDE.md)
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
+    # --- Inicializar MCP ---
+    mcp = MCPRegistry()
+    active_schemas = list(TOOL_SCHEMAS)
+    active_handlers: dict[str, Any] = dict(TOOL_HANDLERS)
+
+    try:
+        if config.mcp_servers:
+            await mcp.startup(config.mcp_servers)
+            active_schemas.extend(mcp.schemas)
+            active_handlers.update(mcp.handlers)
+
+        return await _agent_loop(
+            prompt=prompt,
+            adapter=adapter,
+            config=config,
+            cwd=cwd,
+            system_prompt=system_prompt,
+            active_schemas=active_schemas,
+            active_handlers=active_handlers,
+        )
+    finally:
+        await mcp.shutdown()
+
+
+async def _agent_loop(
+    prompt: str,
+    adapter: ProviderAdapter,
+    config: KlausConfig,
+    cwd: Path,
+    system_prompt: str | None,
+    active_schemas: list[dict[str, Any]],
+    active_handlers: dict[str, Any],
+) -> int:
+    """Loop interno del agente (desacoplado del lifecycle MCP)."""
     messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
     max_turns = config.behavior.max_agent_turns
 
-    # Acumuladores de tokens reales desde la API
     total_input_tokens: int = 0
     total_output_tokens: int = 0
 
@@ -64,16 +99,14 @@ async def run_agent_loop(
             system_prompt=system_prompt,
         )
         if plan_exit is None:
-            # Usuario canceló el plan
             return 0
-        # plan_exit contiene los mensajes enriquecidos con el plan confirmado
         messages = plan_exit
 
     for turn in range(max_turns):
         try:
             response = await adapter.send_message(
                 messages=messages,
-                tools=TOOL_SCHEMAS,
+                tools=active_schemas,
                 system=system_prompt,
             )
         except Exception as e:
@@ -96,23 +129,18 @@ async def run_agent_loop(
         text = adapter.extract_text(response)
         tool_calls = adapter.extract_tool_calls(response)
 
-        # Mostrar texto parcial si lo hay
         if text:
             console.print(Markdown(text))
 
-        # Turno final — no hay tool calls
         if stop == "end_turn" or not tool_calls:
             return 0
 
-        # Hay tool calls — ejecutar y construir mensajes de respuesta
         if stop == "tool_use":
-            # Añadir el mensaje del asistente (con tool_use blocks)
             messages.append({"role": "assistant", "content": response["content"]})
 
-            # Ejecutar cada tool call y recopilar resultados
             tool_results: list[dict[str, Any]] = []
             for tc in tool_calls:
-                result = await _dispatch_tool(tc, config, cwd)
+                result = await _dispatch_tool(tc, config, cwd, active_handlers)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tc["id"],
@@ -121,7 +149,6 @@ async def run_agent_loop(
 
             messages.append({"role": "user", "content": tool_results})
 
-            # Auto-compact si se aproxima al límite de contexto
             if config.context.auto_compact:
                 threshold = int(config.context.max_context_tokens * 0.8)
                 if total_input_tokens >= threshold:
@@ -131,12 +158,10 @@ async def run_agent_loop(
                             f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
                             f"(threshold: {threshold:,} tokens)[/yellow]"
                         )
-                        # Resetear acumulador: la próxima llamada partirá con contexto reducido
                         total_input_tokens = 0
 
             continue
 
-        # stop_reason inesperado — terminar
         if stop == "max_tokens":
             console.print("[yellow]⚠️  Límite de tokens alcanzado[/yellow]")
         return 0
@@ -186,7 +211,6 @@ async def _run_plan_phase(
         console.print("[yellow]Plan cancelado — sin cambios en el proyecto.[/yellow]")
         return None
 
-    # Inyectar el plan en la conversación y confirmar la ejecución
     return [
         *messages,
         {"role": "assistant", "content": plan_text},
@@ -198,23 +222,22 @@ async def _dispatch_tool(
     tool_call: dict[str, Any],
     config: KlausConfig,
     cwd: Path,
+    handlers: dict[str, Any] | None = None,
 ) -> Any:
     """Despacha una tool call al handler correspondiente."""
     name = tool_call.get("name", "")
     args = tool_call.get("input", {})
 
-    handler = TOOL_HANDLERS.get(name)
+    _handlers = handlers if handlers is not None else TOOL_HANDLERS
+    handler = _handlers.get(name)
     if not handler:
         return {"error": f"Tool desconocida: {name}"}
 
-    # Mostrar qué tool se ejecuta
     _print_tool_call(name, args)
 
     try:
-        # Pasar cwd a las tools que lo soporten
         result = await handler(**args, cwd=cwd)
     except TypeError:
-        # Si el handler no acepta cwd (compatibilidad futura)
         result = await handler(**args)
     except Exception as e:
         result = {"error": f"Error ejecutando {name}: {e}"}

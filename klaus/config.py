@@ -48,12 +48,21 @@ class NetworkConfig(BaseModel):
     timeout_seconds: int = 120
 
 
+class MCPServerConfig(BaseModel):
+    """Configuración de un servidor MCP externo."""
+
+    name: str
+    command: list[str]
+    env: dict[str, str] = Field(default_factory=dict)
+
+
 class KlausConfig(BaseModel):
     provider: ProviderConfig = Field(default_factory=ProviderConfig)
     behavior: BehaviorConfig = Field(default_factory=BehaviorConfig)
     session: SessionConfig = Field(default_factory=SessionConfig)
     context: ContextConfig = Field(default_factory=ContextConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
+    mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
 
     @property
     def api_key(self) -> str:
@@ -72,7 +81,7 @@ def load_config(
             raw = yaml.safe_load(f) or {}
 
     # Env var overrides
-    if val := os.getenv("KLAUS_BASE_URL"):
+    if val := os.getenv("Klaus_BASE_URL"):
         raw.setdefault("provider", {})["base_url"] = val
     if val := os.getenv("KLAUS_MODEL"):
         raw.setdefault("provider", {})["model"] = val
@@ -119,4 +128,12 @@ network:
   max_retries: 3
   backoff_base_seconds: 1.5
   timeout_seconds: 120
+
+# mcp_servers:
+#   - name: filesystem
+#     command: ["uvx", "mcp-server-filesystem", "/home/user/projects"]
+#   - name: github
+#     command: ["uvx", "mcp-server-github"]
+#     env:
+#       GITHUB_TOKEN: "${GITHUB_TOKEN}"
 """
