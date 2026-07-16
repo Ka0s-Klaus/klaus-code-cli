@@ -258,6 +258,16 @@ def repl(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
     base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
     project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
+    session: Optional[str] = typer.Option(
+        None, "--session",
+        help="Nombre de sesión personalizado (default: hash SHA1 del project_root). "
+             "Útil para abrir sesiones paralelas en el mismo directorio.",
+    ),
+    no_persist: bool = typer.Option(
+        False, "--no-persist",
+        help="Desactiva el guardado de historial en disco para esta ejecución. "
+             "La sesión es efímera y no se reanudará.",
+    ),
     allow_writes: bool = typer.Option(
         False, "--allow-writes",
         help="Auto-aprueba write_file, edit_file, delete_file sin confirmación interactiva",
@@ -303,11 +313,18 @@ def repl(
         )
 
     project_root = Path(project).resolve() if project else Path.cwd()
-    exit_code = asyncio.run(_repl_async(config, project_root))
+    exit_code = asyncio.run(
+        _repl_async(config, project_root, session_name=session, persist=not no_persist)
+    )
     raise typer.Exit(exit_code)
 
 
-async def _repl_async(config: KlausConfig, project_root: Path) -> int:
+async def _repl_async(
+    config: KlausConfig,
+    project_root: Path,
+    session_name: str | None = None,
+    persist: bool = True,
+) -> int:
     from .repl import run_repl
 
     adapter = _get_adapter(config)
@@ -316,6 +333,8 @@ async def _repl_async(config: KlausConfig, project_root: Path) -> int:
             adapter=adapter,
             config=config,
             project_root=project_root,
+            session_name=session_name,
+            persist=persist,
         )
     except Exception as e:
         console.print(f"[red]Error inesperado:[/red] {e}")
