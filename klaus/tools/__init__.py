@@ -284,3 +284,13 @@ TOOL_HANDLERS: dict[str, Callable[..., Any]] = {
     "git_diff": git_diff,
     "git_commit": git_commit,
 }
+
+
+def configure_confirmations(
+    auto_approve_writes: bool = False,
+    auto_approve_bash: bool = False,
+) -> None:
+    """Aplica los flags de modo no interactivo a los módulos de tools."""
+    from . import write, bash
+    write.CONFIRM_WRITES = not auto_approve_writes
+    bash.CONFIRM_BASH = not auto_approve_bash

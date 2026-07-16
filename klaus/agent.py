@@ -16,7 +16,7 @@ from .config import KlausConfig
 from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
-from .tools import TOOL_HANDLERS, TOOL_SCHEMAS
+from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
 
 console = Console()
 
@@ -46,6 +46,12 @@ async def run_agent_loop(
     - Devuelve exit code (0 = éxito, 1 = error).
     """
     cwd = project_root or Path.cwd()
+
+    # Aplicar modo no interactivo si está configurado
+    configure_confirmations(
+        auto_approve_writes=config.behavior.auto_approve_writes,
+        auto_approve_bash=config.behavior.auto_approve_bash,
+    )
 
     # Cargar contexto del proyecto (CLAUDE.md / CLAUDE.md)
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
