@@ -58,7 +58,8 @@ def run(
     prompt: str = typer.Argument(..., help="Prompt para el agente"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
     base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Directorio del proyecto"),
+    project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
+    plan: bool = typer.Option(False, "--plan", help="Modo plan: propone un plan de acción antes de ejecutar"),
 ) -> None:
     """Ejecuta el agente con tool calling en modo no interactivo."""
     try:
@@ -73,6 +74,10 @@ def run(
             f"Ejecuta: [dim]export {config.provider.api_key_env}=tu-api-key[/dim]"
         )
         raise typer.Exit(4)
+
+    # --plan flag activa plan_mode (tiene precedencia sobre config.yaml)
+    if plan:
+        config.behavior.plan_mode = True
 
     project_root = Path(project).resolve() if project else Path.cwd()
     exit_code = asyncio.run(_run_async(prompt, config, project_root))

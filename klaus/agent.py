@@ -9,6 +9,7 @@ from typing import Any
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.prompt import Confirm
 from rich.syntax import Syntax
 
 from .config import KlausConfig
@@ -17,6 +18,14 @@ from .provider.base import ProviderAdapter
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS
 
 console = Console()
+
+_PLAN_MODE_SYSTEM = (
+    "\n\n---\n"
+    "MODO PLAN ACTIVADO: Analiza la solicitud y presenta un plan detallado numerado "
+    "de las acciones que realizarías — qué herramientas usarías, en qué orden y con "
+    "qué argumentos específicos. NO ejecutes ninguna herramienta todavía. "
+    "Sé concreto y conciso. El usuario confirmará el plan antes de que lo ejecutes."
+)
 
 
 async def run_agent_loop(
@@ -27,6 +36,7 @@ async def run_agent_loop(
 ) -> int:
     """Loop principal del agente.
 
+    - Si plan_mode está activo: genera plan → pide confirmación → ejecuta.
     - Envía el prompt inicial con las tools disponibles.
     - Si el modelo llama tools, las ejecuta y devuelve los resultados.
     - Continúa hasta que stop_reason sea 'end_turn' o se agoten los turnos.
@@ -36,7 +46,7 @@ async def run_agent_loop(
     cwd = project_root or Path.cwd()
 
     # Cargar contexto del proyecto (CLAUS.md / CLAUDE.md)
-    ctx = load_project_context(cwd, max_tokens=config.context.max_klaus_md_tokens)
+    ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
     messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
@@ -45,6 +55,19 @@ async def run_agent_loop(
     # Acumuladores de tokens reales desde la API
     total_input_tokens: int = 0
     total_output_tokens: int = 0
+
+    # --- Fase de planificación (opcional) ---
+    if config.behavior.plan_mode:
+        plan_exit = await _run_plan_phase(
+            messages=messages,
+            adapter=adapter,
+            system_prompt=system_prompt,
+        )
+        if plan_exit is None:
+            # Usuario canceló el plan
+            return 0
+        # plan_exit contiene los mensajes enriquecidos con el plan confirmado
+        messages = plan_exit
 
     for turn in range(max_turns):
         try:
@@ -120,6 +143,55 @@ async def run_agent_loop(
 
     console.print(f"[yellow]⚠️  Límite de {max_turns} turnos alcanzado[/yellow]")
     return 0
+
+
+async def _run_plan_phase(
+    messages: list[dict[str, Any]],
+    adapter: ProviderAdapter,
+    system_prompt: str | None,
+) -> list[dict[str, Any]] | None:
+    """Genera un plan de acción y pide confirmación al usuario.
+
+    Devuelve la lista de mensajes enriquecida con el plan si el usuario confirma,
+    o None si cancela.
+    """
+    plan_system = (system_prompt or "") + _PLAN_MODE_SYSTEM
+
+    console.print("[cyan]🗺️  Modo plan activado — generando plan de acción...[/cyan]")
+    try:
+        response = await adapter.send_message(
+            messages=messages,
+            system=plan_system,
+            # Sin tools: fuerza respuesta solo texto
+        )
+    except Exception as e:
+        console.print(f"[red]Error generando plan:[/red] {e}")
+        return None
+
+    plan_text = adapter.extract_text(response)
+    if plan_text:
+        console.print(
+            Panel(
+                Markdown(plan_text),
+                title="[cyan]📋 Plan propuesto[/cyan]",
+                border_style="cyan",
+                padding=(1, 2),
+            )
+        )
+    else:
+        console.print("[yellow]El modelo no generó un plan — ejecutando directamente.[/yellow]")
+        return messages
+
+    if not Confirm.ask("\n¿Ejecutar este plan?", default=False):
+        console.print("[yellow]Plan cancelado — sin cambios en el proyecto.[/yellow]")
+        return None
+
+    # Inyectar el plan en la conversación y confirmar la ejecución
+    return [
+        *messages,
+        {"role": "assistant", "content": plan_text},
+        {"role": "user", "content": "Plan confirmado. Ejecuta el plan paso a paso."},
+    ]
 
 
 async def _dispatch_tool(

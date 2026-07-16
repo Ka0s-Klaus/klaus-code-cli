@@ -1,4 +1,4 @@
-"""Carga y validación de configuración desde ~/.klaus/config.yaml."""
+"""Carga y validación de configuración desde ~/.Klaus/config.yaml."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field
 
-CONFIG_PATH = Path.home() / ".klaus" / "config.yaml"
+CONFIG_PATH = Path.home() / ".Klaus" / "config.yaml"
 
 
 class ProviderConfig(BaseModel):
@@ -26,10 +26,11 @@ class BehaviorConfig(BaseModel):
     auto_approve_writes: bool = False
     auto_approve_bash: bool = False
     max_agent_turns: int = 25
+    plan_mode: bool = False
 
 
 class SessionConfig(BaseModel):
-    storage_path: str = "~/.klaus/sessions/"
+    storage_path: str = "~/.Klaus/sessions/"
     persist: bool = True
     lock_enabled: bool = True
 
@@ -38,7 +39,7 @@ class ContextConfig(BaseModel):
     max_context_tokens: int = 100_000
     auto_compact: bool = True
     max_file_read_lines: int = 2000
-    max_klaus_md_tokens: int = 4000
+    max_Klaus_md_tokens: int = 4000
 
 
 class NetworkConfig(BaseModel):
@@ -63,7 +64,7 @@ def load_config(
     base_url_override: str | None = None,
     model_override: str | None = None,
 ) -> KlausConfig:
-    """Load config from ~/.klaus/config.yaml with env var and CLI overrides."""
+    """Load config from ~/.Klaus/config.yaml with env var and CLI overrides."""
     raw: dict[str, Any] = {}
 
     if CONFIG_PATH.exists():
@@ -101,9 +102,10 @@ behavior:
   auto_approve_writes: false
   auto_approve_bash: false
   max_agent_turns: 25
+  plan_mode: false
 
 session:
-  storage_path: "~/.klaus/sessions/"
+  storage_path: "~/.Klaus/sessions/"
   persist: true
   lock_enabled: true
 
@@ -111,7 +113,7 @@ context:
   max_context_tokens: 100000
   auto_compact: true
   max_file_read_lines: 2000
-  max_klaus_md_tokens: 4000
+  max_Klaus_md_tokens: 4000
 
 network:
   max_retries: 3
