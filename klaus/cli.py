@@ -1,24 +1,22 @@
-"""Entrypoint principal del CLI — comandos de fase 1."""
+"""Entrypoint principal del CLI."""
 
 from __future__ import annotations
 
 import asyncio
-import sys
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.markdown import Markdown
-from rich.spinner import Spinner
 from rich.live import Live
+from rich.spinner import Spinner
 
 from . import __version__
 from .config import CONFIG_PATH, DEFAULT_CONFIG_YAML, KlausConfig, load_config
 from .provider.base import ProviderAdapter
 
 app = typer.Typer(
-    name="klaus",
+    name="Klaus",
     help="Klaus Code CLI — agente de codificación agnóstico de proveedor",
     no_args_is_help=True,
 )
@@ -42,8 +40,9 @@ def run(
     prompt: str = typer.Argument(..., help="Prompt para el agente"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
     base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Directorio del proyecto"),
 ) -> None:
-    """Ejecuta una petición en modo no interactivo y sale."""
+    """Ejecuta el agente con tool calling en modo no interactivo."""
     try:
         config = load_config(base_url_override=base_url, model_override=model)
     except Exception as e:
@@ -57,11 +56,14 @@ def run(
         )
         raise typer.Exit(4)
 
-    exit_code = asyncio.run(_run_async(prompt, config))
+    project_root = Path(project).resolve() if project else Path.cwd()
+    exit_code = asyncio.run(_run_async(prompt, config, project_root))
     raise typer.Exit(exit_code)
 
 
-async def _run_async(prompt: str, config: KlausConfig) -> int:
+async def _run_async(prompt: str, config: KlausConfig, project_root: Path) -> int:
+    from .agent import run_agent_loop
+
     adapter = _get_adapter(config)
     try:
         with Live(
@@ -69,35 +71,33 @@ async def _run_async(prompt: str, config: KlausConfig) -> int:
             console=console,
             transient=True,
         ):
-            response = await adapter.send_message(
-                messages=[{"role": "user", "content": prompt}]
-            )
+            # Primer ping para mostrar spinner — el loop lo gestiona internamente
+            pass
+
+        return await run_agent_loop(
+            prompt=prompt,
+            adapter=adapter,
+            config=config,
+            project_root=project_root,
+        )
     except Exception as e:
-        console.print(f"[red]Error de red:[/red] {e}")
+        console.print(f"[red]Error inesperado:[/red] {e}")
         return 1
     finally:
         await adapter.close()
-
-    text = adapter.extract_text(response)
-    if text:
-        console.print(Markdown(text))
-    else:
-        console.print("[yellow]Respuesta vacía del modelo[/yellow]")
-
-    return 0
 
 
 @app.command()
 def init(
     scan: bool = typer.Option(False, "--scan", help="Explora el proyecto y genera KLAUS.md"),
 ) -> None:
-    """Crea ~/.klaus/config.yaml con valores por defecto."""
-    config_dir = Path.home() / ".klaus"
+    """Crea ~/.Klaus/config.yaml con valores por defecto."""
+    config_dir = Path.home() / ".Klaus"
     config_dir.mkdir(parents=True, exist_ok=True)
 
     if CONFIG_PATH.exists():
         console.print(f"[yellow]⚠️[/yellow]  {CONFIG_PATH} ya existe — no se sobreescribe")
-        console.print("[dim]Usa `klaus config show` para ver la configuración activa[/dim]")
+        console.print("[dim]Usa `Klaus config show` para ver la configuración activa[/dim]")
         return
 
     CONFIG_PATH.write_text(DEFAULT_CONFIG_YAML, encoding="utf-8")
@@ -119,7 +119,6 @@ def config_show() -> None:
 
     import json
     data = config.model_dump()
-    # DECISIÓN: nunca exponer el valor real de la api_key
     data["provider"]["api_key_value"] = "***" if config.api_key else "(no definida)"
     console.print_json(json.dumps(data, indent=2, ensure_ascii=False))
 
