@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable
 
 
 class ProviderAdapter(ABC):
@@ -16,6 +16,25 @@ class ProviderAdapter(ABC):
     ) -> dict[str, Any]:
         """Envía mensajes al proveedor y devuelve la respuesta en formato Anthropic."""
         ...
+
+    async def stream_message(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        system: str | None = None,
+        on_token: Callable[[str], None] | None = None,
+    ) -> dict[str, Any]:
+        """Stream tokens via on_token callback. Returns complete response dict.
+
+        Default: falls back to send_message (batch mode).
+        Subclasses override para streaming real token a token.
+        """
+        response = await self.send_message(messages, tools, system)
+        if on_token:
+            text = self.extract_text(response)
+            if text:
+                on_token(text)
+        return response
 
     @abstractmethod
     async def close(self) -> None:

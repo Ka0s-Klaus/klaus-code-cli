@@ -27,6 +27,7 @@ class BehaviorConfig(BaseModel):
     auto_approve_bash: bool = False
     max_agent_turns: int = 25
     plan_mode: bool = False
+    streaming: bool = True
 
 
 class SessionConfig(BaseModel):
@@ -112,6 +113,7 @@ behavior:
   auto_approve_bash: false
   max_agent_turns: 25
   plan_mode: false
+  streaming: true
 
 session:
   storage_path: "~/.Klaus/sessions/"
