@@ -39,3 +39,11 @@ class ProviderAdapter(ABC):
 
     def stop_reason(self, response: dict[str, Any]) -> str:
         return response.get("stop_reason", "end_turn")
+
+    def extract_usage(self, response: dict[str, Any]) -> dict[str, int]:
+        """Devuelve los tokens consumidos según el campo usage de la respuesta."""
+        usage = response.get("usage", {})
+        return {
+            "input_tokens": int(usage.get("input_tokens", 0)),
+            "output_tokens": int(usage.get("output_tokens", 0)),
+        }

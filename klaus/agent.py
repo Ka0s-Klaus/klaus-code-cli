@@ -1,4 +1,4 @@
-"""Loop del agente Klaus con tool calling multi-turn."""
+"""Loop del agente Klaus con tool calling multi-turn y context management."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 
 from .config import KlausConfig
-from .context import load_project_context
+from .context import compact_messages, load_project_context
 from .provider.base import ProviderAdapter
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS
 
@@ -25,22 +25,26 @@ async def run_agent_loop(
     config: KlausConfig,
     project_root: Path | None = None,
 ) -> int:
-    """
-    Loop principal del agente.
+    """Loop principal del agente.
 
     - Envía el prompt inicial con las tools disponibles.
     - Si el modelo llama tools, las ejecuta y devuelve los resultados.
     - Continúa hasta que stop_reason sea 'end_turn' o se agoten los turnos.
+    - Gestiona el contexto: tracking de tokens y auto-compact cuando se aproxima el límite.
     - Devuelve exit code (0 = éxito, 1 = error).
     """
     cwd = project_root or Path.cwd()
 
-    # Cargar contexto del proyecto (KLAUS.md / CLAUDE.md)
+    # Cargar contexto del proyecto (CLAUS.md / CLAUDE.md)
     ctx = load_project_context(cwd, max_tokens=config.context.max_klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
     messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
     max_turns = config.behavior.max_agent_turns
+
+    # Acumuladores de tokens reales desde la API
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
 
     for turn in range(max_turns):
         try:
@@ -52,6 +56,18 @@ async def run_agent_loop(
         except Exception as e:
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
             return 1
+
+        # Tracking de tokens reales
+        usage = adapter.extract_usage(response)
+        total_input_tokens += usage["input_tokens"]
+        total_output_tokens += usage["output_tokens"]
+
+        if usage["input_tokens"] > 0:
+            ctx_pct = int(total_input_tokens / config.context.max_context_tokens * 100)
+            console.print(
+                f"[dim]📊 tokens — input: {total_input_tokens:,} ({ctx_pct}%) "
+                f"| output: {total_output_tokens:,}[/dim]"
+            )
 
         stop = adapter.stop_reason(response)
         text = adapter.extract_text(response)
@@ -81,6 +97,20 @@ async def run_agent_loop(
                 })
 
             messages.append({"role": "user", "content": tool_results})
+
+            # Auto-compact si se aproxima al límite de contexto
+            if config.context.auto_compact:
+                threshold = int(config.context.max_context_tokens * 0.8)
+                if total_input_tokens >= threshold:
+                    messages, dropped = compact_messages(messages, keep_last=6)
+                    if dropped > 0:
+                        console.print(
+                            f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
+                            f"(threshold: {threshold:,} tokens)[/yellow]"
+                        )
+                        # Resetear acumulador: la próxima llamada partirá con contexto reducido
+                        total_input_tokens = 0
+
             continue
 
         # stop_reason inesperado — terminar

@@ -1,4 +1,4 @@
-"""Gestión del contexto del proyecto: .klausignore y KLAUS.md."""
+"""Gestión del contexto del proyecto: .klausignore, CLAUS.md y token management."""
 
 from __future__ import annotations
 
@@ -54,10 +54,12 @@ class KlausIgnore:
         return False
 
 
+
 def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str, Any]:
-    """Carga KLAUS.md si existe y devuelve el contexto del proyecto."""
+    """Carga CLAUS.md/CLAUDE.md si existe y devuelve el contexto del proyecto."""
     result: dict[str, Any] = {"root": str(project_root)}
 
+    # CLAUS.md (formato Klaus) tiene prioridad; CLAUDE.md y .CLAUDE.md como fallback
     for name in ("KLAUS.md", "CLAUDE.md", ".CLAUDE.md"):
         candidate = project_root / name
         if candidate.exists():
@@ -71,3 +73,70 @@ def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str
             break
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Token tracking
+# ---------------------------------------------------------------------------
+
+
+def _extract_text_from_content(content: Any) -> str:
+    """Extrae texto de un campo content que puede ser str o list de blocks."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict):
+                for key in ("text", "content"):
+                    val = block.get(key)
+                    if isinstance(val, str):
+                        parts.append(val)
+                    elif isinstance(val, list):
+                        for sub in val:
+                            if isinstance(sub, dict) and isinstance(sub.get("text"), str):
+                                parts.append(sub["text"])
+        return "".join(parts)
+    return ""
+
+
+def estimate_messages_tokens(messages: list[dict[str, Any]]) -> int:
+    """Estima el número de tokens en la lista de mensajes (1 token ≈ 4 caracteres)."""
+    total_chars = sum(
+        len(_extract_text_from_content(m.get("content", ""))) for m in messages
+    )
+    return max(1, total_chars // 4)
+
+
+# ---------------------------------------------------------------------------
+# Compactación de contexto
+# ---------------------------------------------------------------------------
+
+_COMPACTION_MARKER = (
+    "[CONTEXTO COMPACTADO — mensajes intermedios omitidos para gestionar el límite de contexto]"
+)
+
+
+def compact_messages(
+    messages: list[dict[str, Any]],
+    keep_last: int = 6,
+) -> tuple[list[dict[str, Any]], int]:
+    """Sliding window: mantiene el primer mensaje + los últimos keep_last + marcador.
+
+    Devuelve (mensajes_compactados, n_mensajes_eliminados).
+    Si la lista ya es suficientemente corta, la devuelve intacta con dropped=0.
+    """
+    # Necesitamos primer + marcador + keep_last: no compactar si no hay margen
+    if len(messages) <= keep_last + 1:
+        return messages, 0
+
+    first = messages[0]
+    tail = messages[-keep_last:]
+    dropped = len(messages) - 1 - keep_last  # excluye el primer mensaje
+
+    marker: dict[str, Any] = {
+        "role": "user",
+        "content": f"{_COMPACTION_MARKER} ({dropped} mensajes omitidos)",
+    }
+
+    return [first, marker, *tail], dropped
