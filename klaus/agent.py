@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from rich.console import Console
+from rich.live import Live
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Confirm
+from rich.spinner import Spinner
 from rich.syntax import Syntax
 
 from .config import KlausConfig
@@ -110,11 +112,16 @@ async def _agent_loop(
 
     for turn in range(max_turns):
         try:
-            response = await adapter.send_message(
-                messages=messages,
-                tools=active_schemas,
-                system=system_prompt,
-            )
+            with Live(
+                Spinner("dots", "[dim] Pensando...[/dim]"),
+                console=console,
+                transient=True,
+            ):
+                response = await adapter.send_message(
+                    messages=messages,
+                    tools=active_schemas,
+                    system=system_prompt,
+                )
         except Exception as e:
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
             return 1
