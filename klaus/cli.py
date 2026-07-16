@@ -60,8 +60,20 @@ def run(
     base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
     project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
     plan: bool = typer.Option(False, "--plan", help="Modo plan: propone un plan de acción antes de ejecutar"),
+    allow_writes: bool = typer.Option(
+        False, "--allow-writes",
+        help="Auto-aprueba write_file, edit_file, delete_file sin confirmación interactiva",
+    ),
+    allow_bash: bool = typer.Option(
+        False, "--allow-bash",
+        help="Auto-aprueba run_bash sin confirmación interactiva (bloques de seguridad siguen activos)",
+    ),
+    yolo: bool = typer.Option(
+        False, "--yolo",
+        help="Modo sin confirmaciones: equivale a --allow-writes --allow-bash",
+    ),
 ) -> None:
-    """Ejecuta el agente con tool calling en modo no interactivo."""
+    """Ejecuta el agente con tool calling."""
     try:
         config = load_config(base_url_override=base_url, model_override=model)
     except Exception as e:
@@ -75,9 +87,25 @@ def run(
         )
         raise typer.Exit(4)
 
-    # --plan flag activa plan_mode (tiene precedencia sobre config.yaml)
+    # Flags de modo (CLI tiene precedencia sobre config.yaml)
     if plan:
         config.behavior.plan_mode = True
+    if yolo or allow_writes:
+        config.behavior.auto_approve_writes = True
+    if yolo or allow_bash:
+        config.behavior.auto_approve_bash = True
+
+    if yolo:
+        from rich.panel import Panel as _Panel
+        console.print(
+            _Panel(
+                "[yellow bold]⚡ YOLO MODE ACTIVADO[/yellow bold]\n\n"
+                "[dim]write_file, edit_file, delete_file y run_bash se ejecutan sin confirmación.\n"
+                "Los bloques de seguridad de run_bash siguen activos (rm -rf, curl|bash, etc.).[/dim]",
+                title="[yellow]⚠️  Modo sin confirmaciones[/yellow]",
+                border_style="yellow",
+            )
+        )
 
     project_root = Path(project).resolve() if project else Path.cwd()
     exit_code = asyncio.run(_run_async(prompt, config, project_root))

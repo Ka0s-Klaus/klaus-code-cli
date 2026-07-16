@@ -21,7 +21,10 @@ console = Console()
 # Límite de caracteres en stdout/stderr devueltos al modelo
 OUTPUT_CHAR_LIMIT = 20_000
 
-# Patrones peligrosos — se bloquean siempre, sin importar CONFIRM_WRITES
+# Puesto en False por --allow-bash / --yolo
+CONFIRM_BASH: bool = True
+
+# Patrones peligrosos — se bloquean siempre, sin importar CONFIRM_BASH
 _DANGEROUS_PATTERNS: list[tuple[str, str]] = [
     (r"rm\s+-[a-z]*r[a-z]*\s+/(?:\s|$)", "rm -r / (borrado recursivo de raíz)"),
     (r"rm\s+-[a-z]*f[a-z]*\s+/(?:\s|$)", "rm -f / (borrado forzado de raíz)"),
@@ -50,8 +53,7 @@ def _check_dangerous(command: str) -> str | None:
 
 
 def _confirm_run() -> bool:
-    from .write import CONFIRM_WRITES
-    if not CONFIRM_WRITES:
+    if not CONFIRM_BASH:
         return True
     return Confirm.ask("¿Ejecutar el comando anterior?", default=False)
 
