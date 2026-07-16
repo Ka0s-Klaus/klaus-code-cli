@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import readline  # noqa: F401 — activa historial y edición de línea por defecto en Linux/Mac
 from datetime import datetime
 from pathlib import Path
@@ -35,17 +36,20 @@ _SPECIAL_COMMANDS = {
 }
 
 
-def _print_welcome(version: str, session_id: str, persist: bool, resumed: bool) -> None:
+def _print_welcome(
+    version: str, session_id: str, persist: bool, resumed: bool, streaming: bool
+) -> None:
     session_line = (
         f"[dim]Sesión:[/dim] [cyan]{session_id}[/cyan]"
         if persist
         else "[dim]Sesión:[/dim] [yellow]efímera (--no-persist)[/yellow]"
     )
     resumed_line = "  [green]↩ Historial previo cargado[/green]" if resumed else ""
+    stream_line = "  [dim]streaming: on[/dim]" if streaming else "  [dim]streaming: off[/dim]"
     console.print(
         Panel(
             f"[bold cyan]🤖 Klaus Code CLI[/bold cyan] [dim]v{version}[/dim] — [bold]REPL interactivo[/bold]\n\n"
-            f"{session_line}{resumed_line}\n\n"
+            f"{session_line}{resumed_line}{stream_line}\n\n"
             "[dim]Escribe un prompt y pulsa Enter. El modelo recuerda el contexto de la sesión.\n"
             "Comandos: [cyan]/help[/cyan]  [cyan]/clear[/cyan]  [cyan]/history[/cyan]  "
             "[cyan]/sessions[/cyan]  [cyan]/exit[/cyan] · Ctrl+D para salir[/dim]",
@@ -115,6 +119,7 @@ async def run_repl(
     project_root: Path,
     session_name: str | None = None,
     persist: bool = True,
+    streaming: bool = True,
 ) -> int:
     """Arranca el REPL interactivo — mantiene historial entre turnos del usuario."""
     configure_confirmations(
@@ -126,9 +131,9 @@ async def run_repl(
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
-    # Resolver si persiste: CLI flag AND config
     effective_persist = persist and config.session.persist
     lock_enabled = config.session.lock_enabled
+    effective_streaming = streaming and config.behavior.streaming
 
     session_mgr = SessionManager(
         storage_path=config.session.storage_path,
@@ -155,7 +160,6 @@ async def run_repl(
             active_schemas.extend(mcp.schemas)
             active_handlers.update(mcp.handlers)
 
-        # Cargar historial previo
         messages: list[dict[str, Any]] = session_mgr.load() if effective_persist else []
         resumed = bool(messages)
 
@@ -165,6 +169,7 @@ async def run_repl(
             session_id=session_mgr.session_id,
             persist=effective_persist,
             resumed=resumed,
+            streaming=effective_streaming,
         )
 
         return await _repl_loop(
@@ -177,6 +182,7 @@ async def run_repl(
             messages=messages,
             session_mgr=session_mgr,
             persist=effective_persist,
+            streaming=effective_streaming,
         )
     finally:
         lock.release()
@@ -193,6 +199,7 @@ async def _repl_loop(
     messages: list[dict[str, Any]],
     session_mgr: SessionManager,
     persist: bool,
+    streaming: bool,
 ) -> int:
     """Loop principal del REPL."""
     while True:
@@ -238,6 +245,7 @@ async def _repl_loop(
             system_prompt=system_prompt,
             active_schemas=active_schemas,
             active_handlers=active_handlers,
+            streaming=streaming,
         )
 
         if persist:
@@ -255,19 +263,32 @@ async def _run_turn(
     system_prompt: str | None,
     active_schemas: list[dict[str, Any]],
     active_handlers: dict[str, Any],
+    streaming: bool = True,
 ) -> list[dict[str, Any]]:
     """Procesa un turno completo (usuario → modelo → tools* → modelo) y devuelve los mensajes actualizados."""
     max_turns = config.behavior.max_agent_turns
     total_input: int = 0
     total_output: int = 0
 
+    def _on_token(token: str) -> None:
+        sys.stdout.write(token)
+        sys.stdout.flush()
+
     for turn in range(max_turns):
         try:
-            response = await adapter.send_message(
-                messages=messages,
-                tools=active_schemas,
-                system=system_prompt,
-            )
+            if streaming:
+                response = await adapter.stream_message(
+                    messages=messages,
+                    tools=active_schemas,
+                    system=system_prompt,
+                    on_token=_on_token,
+                )
+            else:
+                response = await adapter.send_message(
+                    messages=messages,
+                    tools=active_schemas,
+                    system=system_prompt,
+                )
         except Exception as e:
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
             return messages
@@ -276,19 +297,25 @@ async def _run_turn(
         total_input += usage["input_tokens"]
         total_output += usage["output_tokens"]
 
-        if usage["input_tokens"] > 0:
+        stop = adapter.stop_reason(response)
+        tool_calls = adapter.extract_tool_calls(response)
+
+        if streaming:
+            # Texto ya impreso via _on_token — añadir newline si hubo texto
+            if adapter.extract_text(response):
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+        else:
+            text = adapter.extract_text(response)
+            if text:
+                console.print(Markdown(text))
+
+        if total_input > 0:
             ctx_pct = int(total_input / config.context.max_context_tokens * 100)
             console.print(
                 f"[dim]📊 tokens — input: {total_input:,} ({ctx_pct}%) "
                 f"| output: {total_output:,}[/dim]"
             )
-
-        stop = adapter.stop_reason(response)
-        text = adapter.extract_text(response)
-        tool_calls = adapter.extract_tool_calls(response)
-
-        if text:
-            console.print(Markdown(text))
 
         if stop == "end_turn" or not tool_calls:
             if response.get("content"):

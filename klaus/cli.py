@@ -268,6 +268,10 @@ def repl(
         help="Desactiva el guardado de historial en disco para esta ejecución. "
              "La sesión es efímera y no se reanudará.",
     ),
+    no_stream: bool = typer.Option(
+        False, "--no-stream",
+        help="Desactiva streaming de tokens. Muestra la respuesta completa de una vez.",
+    ),
     allow_writes: bool = typer.Option(
         False, "--allow-writes",
         help="Auto-aprueba write_file, edit_file, delete_file sin confirmación interactiva",
@@ -314,7 +318,12 @@ def repl(
 
     project_root = Path(project).resolve() if project else Path.cwd()
     exit_code = asyncio.run(
-        _repl_async(config, project_root, session_name=session, persist=not no_persist)
+        _repl_async(
+            config, project_root,
+            session_name=session,
+            persist=not no_persist,
+            streaming=not no_stream,
+        )
     )
     raise typer.Exit(exit_code)
 
@@ -324,6 +333,7 @@ async def _repl_async(
     project_root: Path,
     session_name: str | None = None,
     persist: bool = True,
+    streaming: bool = True,
 ) -> int:
     from .repl import run_repl
 
@@ -335,6 +345,7 @@ async def _repl_async(
             project_root=project_root,
             session_name=session_name,
             persist=persist,
+            streaming=streaming,
         )
     except Exception as e:
         console.print(f"[red]Error inesperado:[/red] {e}")
