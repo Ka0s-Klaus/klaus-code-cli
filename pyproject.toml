@@ -6,6 +6,21 @@ build-backend = "setuptools.build_meta"
 name = "klaus-code-cli"
 version = "0.1.0"
 description = "Klaus Code CLI — agente de codificación agnóstico de proveedor"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Ka0s-Klaus", email = "santacana.canton@icloud.com"}]
+keywords = ["ai", "cli", "coding-assistant", "llm", "agent"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.27",
@@ -34,6 +49,7 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["."]
 
