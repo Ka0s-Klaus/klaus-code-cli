@@ -328,6 +328,7 @@ def repl(
             session_name=session,
             persist=not no_persist,
             streaming=not no_stream,
+            yolo=yolo,
         )
     )
     raise typer.Exit(exit_code)
@@ -339,6 +340,7 @@ async def _repl_async(
     session_name: str | None = None,
     persist: bool = True,
     streaming: bool = True,
+    yolo: bool = False,
 ) -> int:
     from .repl import run_repl
 
@@ -351,6 +353,7 @@ async def _repl_async(
             session_name=session_name,
             persist=persist,
             streaming=streaming,
+            yolo=yolo,
         )
     except Exception as e:
         console.print(f"[red]Error inesperado:[/red] {e}")
