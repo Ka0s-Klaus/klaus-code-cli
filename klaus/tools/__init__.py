@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from .files import list_directory, read_file
 from .search import glob_search, grep_search
+from .write import delete_file, edit_file, write_file
 
 # JSON Schemas en formato Anthropic tool_use
 TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -113,6 +114,75 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": ["pattern"],
         },
     },
+    {
+        "name": "write_file",
+        "description": (
+            "Crea o sobreescribe un fichero con el contenido dado. "
+            "Muestra un diff/preview y pide confirmación antes de escribir. "
+            "Crea directorios intermedios si no existen."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta al fichero (absoluta o relativa al cwd)",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Contenido completo a escribir en el fichero",
+                },
+            },
+            "required": ["path", "content"],
+        },
+    },
+    {
+        "name": "edit_file",
+        "description": (
+            "Edita un fichero existente reemplazando old_string por new_string. "
+            "old_string debe existir y ser único (a menos que replace_all=true). "
+            "Muestra un diff unificado y pide confirmación antes de aplicar."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta al fichero a editar",
+                },
+                "old_string": {
+                    "type": "string",
+                    "description": "Cadena exacta a reemplazar (debe ser única en el fichero)",
+                },
+                "new_string": {
+                    "type": "string",
+                    "description": "Cadena que reemplaza a old_string",
+                },
+                "replace_all": {
+                    "type": "boolean",
+                    "description": "Si reemplazar todas las ocurrencias (por defecto: false)",
+                },
+            },
+            "required": ["path", "old_string", "new_string"],
+        },
+    },
+    {
+        "name": "delete_file",
+        "description": (
+            "Elimina un fichero permanentemente. "
+            "Muestra la ruta y el tamaño, y pide confirmación antes de borrar."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta al fichero a eliminar",
+                },
+            },
+            "required": ["path"],
+        },
+    },
 ]
 
 # Mapping nombre → handler async callable
@@ -121,4 +191,7 @@ TOOL_HANDLERS: dict[str, Callable[..., Any]] = {
     "list_directory": list_directory,
     "glob_search": glob_search,
     "grep_search": grep_search,
+    "write_file": write_file,
+    "edit_file": edit_file,
+    "delete_file": delete_file,
 }
