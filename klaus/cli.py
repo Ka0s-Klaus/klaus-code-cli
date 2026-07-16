@@ -252,6 +252,78 @@ async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
     console.print("[dim]Revisa y edita el fichero antes de usarlo como contexto[/dim]")
 
 
+
+@app.command()
+def repl(
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
+    base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
+    project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
+    allow_writes: bool = typer.Option(
+        False, "--allow-writes",
+        help="Auto-aprueba write_file, edit_file, delete_file sin confirmación interactiva",
+    ),
+    allow_bash: bool = typer.Option(
+        False, "--allow-bash",
+        help="Auto-aprueba run_bash sin confirmación interactiva (bloques de seguridad siguen activos)",
+    ),
+    yolo: bool = typer.Option(
+        False, "--yolo",
+        help="Modo sin confirmaciones: equivale a --allow-writes --allow-bash",
+    ),
+) -> None:
+    """REPL interactivo — loop de conversación persistente con historial entre turnos."""
+    try:
+        config = load_config(base_url_override=base_url, model_override=model)
+    except Exception as e:
+        console.print(f"[red]Error de configuración:[/red] {e}")
+        raise typer.Exit(4)
+
+    if not config.api_key:
+        console.print(
+            f"[red]Error:[/red] Variable de entorno [bold]{config.provider.api_key_env}[/bold] no definida.\n"
+            f"Ejecuta: [dim]export {config.provider.api_key_env}=tu-api-key[/dim]"
+        )
+        raise typer.Exit(4)
+
+    if yolo or allow_writes:
+        config.behavior.auto_approve_writes = True
+    if yolo or allow_bash:
+        config.behavior.auto_approve_bash = True
+
+    if yolo:
+        from rich.panel import Panel as _Panel
+        console.print(
+            _Panel(
+                "[yellow bold]⚡ YOLO MODE ACTIVADO[/yellow bold]\n\n"
+                "[dim]write_file, edit_file, delete_file y run_bash se ejecutan sin confirmación.\n"
+                "Los bloques de seguridad de run_bash siguen activos (rm -rf, curl|bash, etc.).[/dim]",
+                title="[yellow]⚠️  Modo sin confirmaciones[/yellow]",
+                border_style="yellow",
+            )
+        )
+
+    project_root = Path(project).resolve() if project else Path.cwd()
+    exit_code = asyncio.run(_repl_async(config, project_root))
+    raise typer.Exit(exit_code)
+
+
+async def _repl_async(config: KlausConfig, project_root: Path) -> int:
+    from .repl import run_repl
+
+    adapter = _get_adapter(config)
+    try:
+        return await run_repl(
+            adapter=adapter,
+            config=config,
+            project_root=project_root,
+        )
+    except Exception as e:
+        console.print(f"[red]Error inesperado:[/red] {e}")
+        return 1
+    finally:
+        await adapter.close()
+
+
 @config_app.command("show")
 def config_show() -> None:
     """Muestra la configuración activa sin exponer la api_key."""
