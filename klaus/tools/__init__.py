@@ -293,4 +293,5 @@ def configure_confirmations(
     """Aplica los flags de modo no interactivo a los módulos de tools."""
     from . import write, bash
     write.CONFIRM_WRITES = not auto_approve_writes
+    write._APPROVE_ALL = False  # reset "aprobar todo" al iniciar nueva sesión/agente
     bash.CONFIRM_BASH = not auto_approve_bash
