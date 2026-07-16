@@ -1,0 +1,124 @@
+"""Registro central de tools disponibles para Klaus.
+
+Expone TOOL_SCHEMAS (lista de dicts JSON Schema para function calling)
+y TOOL_HANDLERS (dict nombre→función async).
+"""
+
+from __future__ import annotations
+
+from typing import Any, Callable
+
+from .files import list_directory, read_file
+from .search import glob_search, grep_search
+
+# JSON Schemas en formato Anthropic tool_use
+TOOL_SCHEMAS: list[dict[str, Any]] = [
+    {
+        "name": "read_file",
+        "description": (
+            "Lee el contenido de un fichero. Trunca al límite configurado si el fichero "
+            "es muy largo. Devuelve el contenido como texto."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta al fichero (absoluta o relativa al directorio de trabajo)",
+                },
+                "start_line": {
+                    "type": "integer",
+                    "description": "Línea desde la que empezar (1-indexed, opcional)",
+                },
+                "end_line": {
+                    "type": "integer",
+                    "description": "Línea hasta la que leer inclusive (opcional)",
+                },
+            },
+            "required": ["path"],
+        },
+    },
+    {
+        "name": "list_directory",
+        "description": (
+            "Lista el contenido de un directorio. Respeta .klausignore. "
+            "Devuelve nombres de ficheros y subdirectorios."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta al directorio (por defecto: directorio de trabajo actual)",
+                },
+                "recursive": {
+                    "type": "boolean",
+                    "description": "Si listar recursivamente (por defecto: false)",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "glob_search",
+        "description": (
+            "Busca ficheros por patrón glob (e.g. '**/*.py', 'src/*.ts'). "
+            "Respeta .klausignore. Devuelve lista de rutas relativas."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {
+                    "type": "string",
+                    "description": "Patrón glob (e.g. '**/*.py')",
+                },
+                "base_path": {
+                    "type": "string",
+                    "description": "Directorio base de búsqueda (por defecto: cwd)",
+                },
+            },
+            "required": ["pattern"],
+        },
+    },
+    {
+        "name": "grep_search",
+        "description": (
+            "Busca texto o expresión regular en ficheros. "
+            "Devuelve lista de coincidencias con ruta, número de línea y contexto."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {
+                    "type": "string",
+                    "description": "Texto o expresión regular a buscar",
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Fichero o directorio donde buscar (por defecto: cwd)",
+                },
+                "file_pattern": {
+                    "type": "string",
+                    "description": "Filtro glob para ficheros (e.g. '*.py')",
+                },
+                "case_sensitive": {
+                    "type": "boolean",
+                    "description": "Si la búsqueda distingue mayúsculas (por defecto: false)",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "Máximo de resultados a devolver (por defecto: 50)",
+                },
+            },
+            "required": ["pattern"],
+        },
+    },
+]
+
+# Mapping nombre → handler async callable
+TOOL_HANDLERS: dict[str, Callable[..., Any]] = {
+    "read_file": read_file,
+    "list_directory": list_directory,
+    "glob_search": glob_search,
+    "grep_search": grep_search,
+}
