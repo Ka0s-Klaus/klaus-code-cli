@@ -84,13 +84,6 @@ def run(
         console.print(f"[red]Error de configuración:[/red] {e}")
         raise typer.Exit(4)
 
-    if not config.api_key:
-        console.print(
-            f"[red]Error:[/red] Variable de entorno [bold]{config.provider.api_key_env}[/bold] no definida.\n"
-            f"Ejecuta: [dim]export {config.provider.api_key_env}=tu-api-key[/dim]"
-        )
-        raise typer.Exit(4)
-
     # Flags de modo (CLI tiene precedencia sobre config.yaml)
     if plan:
         config.behavior.plan_mode = True
@@ -162,13 +155,6 @@ def init(
             config = load_config()
         except Exception as e:
             console.print(f"[red]Error cargando configuración:[/red] {e}")
-            raise typer.Exit(4)
-
-        if not config.api_key:
-            console.print(
-                f"[red]Error:[/red] Variable de entorno [bold]{config.provider.api_key_env}[/bold] "
-                "no definida — necesaria para --scan."
-            )
             raise typer.Exit(4)
 
         asyncio.run(_scan_and_generate(Path.cwd(), config))
@@ -294,13 +280,6 @@ def repl(
         config = load_config(base_url_override=base_url, model_override=model)
     except Exception as e:
         console.print(f"[red]Error de configuración:[/red] {e}")
-        raise typer.Exit(4)
-
-    if not config.api_key:
-        console.print(
-            f"[red]Error:[/red] Variable de entorno [bold]{config.provider.api_key_env}[/bold] no definida.\n"
-            f"Ejecuta: [dim]export {config.provider.api_key_env}=tu-api-key[/dim]"
-        )
         raise typer.Exit(4)
 
     if yolo or allow_writes:

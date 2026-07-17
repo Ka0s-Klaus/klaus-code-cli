@@ -92,12 +92,12 @@ def _from_openai_response(raw: dict[str, Any]) -> dict[str, Any]:
 class OpenAIAdapter(ProviderAdapter):
     def __init__(self, config: KlausConfig) -> None:
         self._config = config
+        _headers: dict[str, str] = {"content-type": "application/json"}
+        if config.api_key:
+            _headers["Authorization"] = f"Bearer {config.api_key}"
         self._client = httpx.AsyncClient(
             base_url=config.provider.base_url,
-            headers={
-                "Authorization": f"Bearer {config.api_key}",
-                "content-type": "application/json",
-            },
+            headers=_headers,
             timeout=config.network.timeout_seconds,
         )
 

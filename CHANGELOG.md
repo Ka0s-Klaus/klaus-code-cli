@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Fix: KLAUDE_API_KEY opcional
+
+### Fixed
+- `cli.py`: eliminadas guardas `if not config.api_key` en `run()`, `repl()` e `init --scan` — ya no bloquean el arranque cuando no hay API key definida en el cliente
+- `config.py`: `KlausConfig.api_key` ahora devuelve `str | None` en lugar de `""` cuando la variable de entorno no está definida
+- `anthropic_fmt.py`: header `x-api-key` solo se incluye si `api_key` no es `None`
+- `openai_fmt.py`: header `Authorization: Bearer` solo se incluye si `api_key` no es `None`
+
+### Context
+Cuando se usa klaude-proxy como backend, la API key de Anthropic vive en el proxy.
+El cliente (Klaus) solo necesita `KLAUDE_PROXY_URL` — no tiene por qué conocer la key real.
+
+**Files:** `Klaus/config.py`, `Klaus/provider/anthropic_fmt.py`, `Klaus/provider/openai_fmt.py`, `Klaus/cli.py`
+**Issue:** [#39](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/39)
+
+---
+
+
 ## [Unreleased] — Fase 16: Developer UX
 
 ### Added
