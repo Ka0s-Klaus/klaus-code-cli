@@ -6,7 +6,7 @@
 
 **¿Cómo lo hago?** Editando `~/.Klaus/config.yaml` (generado por `Klaus init`) o pasando flags en cada invocación de CLI.
 
-**¿Para qué lo hago?** Para adaptar Klaus a cualquier entorno — desarrollo local con Ollama, staging con LiteLLM, producción con Anthropic — y para controlar el nivel de autonomía del agente según el contexto.
+**¿Para qué lo hago?** Para adaptar Klaus a cualquier entorno — desarrollo local con klaude-proxy, staging con otro proxy compatible — y para controlar el nivel de autonomía del agente según el contexto.
 
 ---
 
@@ -20,29 +20,75 @@ Creado automáticamente por `Klaus init`. Si no existe, Klaus usa los valores po
 
 ---
 
+## 🤖 Integración con klaude-proxy
+
+Klaus Code CLI se diseñó para conectarse exclusivamente a **klaude-proxy** — el proxy semántico con caché vectorial Qdrant que intercepta las llamadas a Anthropic y devuelve respuestas cacheadas ante preguntas similares.
+
+### Variables de entorno (responsabilidad del usuario)
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `KLAUDE_PROXY_URL` | URL completa del proxy, incluyendo `/v1` | `http://192.168.1.50:8080/v1` |
+| `KLAUDE_API_KEY` | API key enviada al proxy como `x-api-key` | `sk-ant-api03-...` |
+
+> 🔑 **Estas dos variables son responsabilidad del usuario** — no se definen en el config.yaml por motivos de seguridad. Cada entorno tiene su propio proxy y su propia key.
+
+### Configuración mínima
+
+```bash
+# En ~/.bashrc, ~/.zshrc o el entorno de tu shell
+export KLAUDE_PROXY_URL="http://192.168.1.50:8080/v1"
+export KLAUDE_API_KEY="sk-ant-api03-..."
+```
+
+### Prioridad de configuración
+
+```
+KLAUDE_PROXY_URL (env) > config.yaml > default (localhost:8080/v1)
+      │                       │                │
+  más alta                  media           más baja
+```
+
+```mermaid
+flowchart LR
+    CLI["--base-url flag"] --> MRG["Merge final"]
+    ENV["KLAUDE_PROXY_URL\nenv var"] --> MRG
+    YAML["~/.Klaus/config.yaml\nbase_url"] --> MRG
+    DEF["Default\nlocalhost:8080/v1"] --> MRG
+    MRG --> CFG["KlausConfig.provider.base_url"]
+```
+
+> CLI flag > KLAUDE_PROXY_URL > config.yaml > default
+
+---
+
 ## 🔌 Sección `provider`
 
 Configura el proveedor de IA y el modelo.
 
 ```yaml
 provider:
-  base_url: "http://localhost:8080/v1"   # URL base del proveedor
-  api_key_env: "KLAUS_API_KEY"           # Nombre de la env var con la API key
+  # URL base de klaude-proxy (incluye /v1).
+  # Sobreescribible sin tocar este fichero: export KLAUDE_PROXY_URL="http://<host>:8080/v1"
+  base_url: "http://localhost:8080/v1"
+  # Nombre de la variable de entorno con la API key.
+  # Sobreescribible: export KLAUDE_API_KEY="sk-ant-..."
+  api_key_env: "KLAUDE_API_KEY"
   api_format: "anthropic"                # Formato de API: "anthropic" | "openai"
   model: "claude-haiku-4-5-20251001"     # Modelo por defecto
   max_tokens: 4096                       # Máximo de tokens en la respuesta
   temperature: 0.2                       # Temperatura (0.0–1.0)
 ```
 
-### Valores recomendados por proveedor
+### Configuraciones habituales
 
-| Proveedor | `base_url` | `api_format` | Modelo ejemplo |
+| Escenario | `base_url` | `api_format` | Notas |
 |---|---|---|---|
-| **Anthropic directo** | `https://api.anthropic.com` | `anthropic` | `claude-sonnet-4-6` |
-| **LiteLLM local** | `http://localhost:8080/v1` | `anthropic` | `claude-haiku-4-5-20251001` |
-| **Ollama** | `http://localhost:11434/v1` | `openai` | `llama3.2` |
-| **OpenAI** | `https://api.openai.com/v1` | `openai` | `gpt-4o` |
-| **vLLM** | `http://localhost:8000/v1` | `openai` | `mistral-7b` |
+| **klaude-proxy local** | `http://localhost:8080/v1` | `anthropic` | Default — proxy en la misma máquina |
+| **klaude-proxy en red** | `http://192.168.1.50:8080/v1` | `anthropic` | Proxy en otro host de la LAN |
+| **Anthropic directo** | `https://api.anthropic.com` | `anthropic` | Sin proxy — coste y latencia directos |
+| **Ollama** | `http://localhost:11434/v1` | `openai` | Modelos locales open-source |
+| **OpenAI** | `https://api.openai.com/v1` | `openai` | GPT-4o y familia |
 
 > ⚠️ La API key **nunca** va en el config.yaml. Usa la variable de entorno definida en `api_key_env`.
 

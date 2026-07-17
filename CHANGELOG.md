@@ -5,36 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] — Fix: KLAUDE_API_KEY opcional + inject working directory
-
-### Fixed
-- `cli.py`: eliminadas guardas `if not config.api_key` en `run()`, `repl()` e `init --scan` — ya no bloquean el arranque cuando no hay API key definida en el cliente
-- `config.py`: `KlausConfig.api_key` ahora devuelve `str | None` en lugar de `""` cuando la variable de entorno no está definida
-- `anthropic_fmt.py`: header `x-api-key` solo se incluye si `api_key` no es `None`
-- `openai_fmt.py`: header `Authorization: Bearer` solo se incluye si `api_key` no es `None`
-
-### Added
-- `context.py`: `load_project_context` inyecta `Working directory: <path>` al inicio del system prompt — el modelo sabe en qué directorio opera con o sin CLAUDE.md
-- `tests/test_context.py`: 4 tests para `load_project_context` — sin CLAUDE.md, con CLAUDE.md, prioridad Klaus.md, truncación
-
-### Context
-Cuando se usa klaude-proxy como backend, la API key de Anthropic vive en el proxy.
-El cliente (Klaus) solo necesita `KLAUDE_PROXY_URL` — no tiene por qué conocer la key real.
-
-Al ejecutar `Klaus repl` desde un directorio de proyecto, el LLM recibe el path de trabajo
-en el system prompt, garantizando que los tool calls con rutas relativas se resuelvan correctamente.
-
-**Files:** `Klaus/config.py`, `Klaus/provider/anthropic_fmt.py`, `Klaus/provider/openai_fmt.py`, `Klaus/cli.py`, `Klaus/context.py`, `tests/test_context.py`
-**Issue:** [#39](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/39) · **PR:** [#40](https://github.com/Ka0s-Klaus/Klaus-code-cli/pull/40)
-
----
-
 ## [Unreleased] — Feat: KLAUDE_PROXY_URL
 
 ### Added
 - `Klaus/config.py`: env var `KLAUDE_PROXY_URL` — URL del proxy klaude, sobreescribe `base_url` sin tocar `config.yaml`
 - `Klaus/config.py`: env vars `KLAUDE_MODEL` y `KLAUDE_API_FORMAT` — consistencia de naming con `KLAUDE_PROXY_URL`
-- `docs/configuration.md`: sección **🤖 Integración con klaude-proxy** — documenta `KLAUDE_PROXY_URL`, `KLAUDE_API_KEY` (opcional con proxy — ver PR #40), prioridad de configuración y flowchart Mermaid
+- `docs/configuration.md`: sección **🤖 Integración con klaude-proxy** — documenta `KLAUDE_PROXY_URL`, `KLAUDE_API_KEY`, prioridad de configuración y flowchart Mermaid
 - `Klaus/config.py`: comentarios inline en `DEFAULT_CONFIG_YAML` sobre `KLAUDE_PROXY_URL` y `KLAUDE_API_KEY`
 
 ### Changed
@@ -42,7 +18,8 @@ en el system prompt, garantizando que los tool calls con rutas relativas se resu
 - `docs/configuration.md`: tabla "Valores recomendados por proveedor" reenfocada en klaude-proxy como backend primario
 
 **Files:** `Klaus/config.py`, `docs/configuration.md`, `CHANGELOG.md`
-**Issue:** [#36](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/36) · **PR:** [#37](https://github.com/Ka0s-Klaus/Klaus-code-cli/pull/37)
+**Issue:** [#36](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/36)
+**PR:** pending
 
 ---
 

@@ -13,8 +13,9 @@ CONFIG_PATH = Path.home() / ".Klaus" / "config.yaml"
 
 
 class ProviderConfig(BaseModel):
+    # URL base del proxy klaude. Sobreescribible con KLAUDE_PROXY_URL.
     base_url: str = "http://localhost:8080/v1"
-    api_key_env: str = "KLAUS_API_KEY"
+    api_key_env: str = "KLAUDE_API_KEY"
     api_format: str = "anthropic"  # "anthropic" | "openai"
     model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 4096
@@ -82,12 +83,12 @@ def load_config(
         with open(CONFIG_PATH) as f:
             raw = yaml.safe_load(f) or {}
 
-    # Env var overrides
-    if val := os.getenv("Klaus_BASE_URL"):
+    # Env var overrides — KLAUDE_PROXY_URL tiene precedencia sobre config.yaml
+    if val := os.getenv("KLAUDE_PROXY_URL"):
         raw.setdefault("provider", {})["base_url"] = val
-    if val := os.getenv("KLAUS_MODEL"):
+    if val := os.getenv("KLAUDE_MODEL"):
         raw.setdefault("provider", {})["model"] = val
-    if val := os.getenv("KLAUS_API_FORMAT"):
+    if val := os.getenv("KLAUDE_API_FORMAT"):
         raw.setdefault("provider", {})["api_format"] = val
 
     # CLI overrides (highest priority)
@@ -99,10 +100,13 @@ def load_config(
     return KlausConfig(**raw)
 
 
-DEFAULT_CONFIG_YAML = """\
-provider:
+DEFAULT_CONFIG_YAML = """provider:
+  # URL base de klaude-proxy (incluye /v1).
+  # Sobreescribible sin tocar este fichero: export KLAUDE_PROXY_URL="http://<host>:8080/v1"
   base_url: "http://localhost:8080/v1"
-  api_key_env: "KLAUS_API_KEY"
+  # Nombre de la variable de entorno que contiene la API key enviada al proxy.
+  # Sobreescribible: export KLAUDE_API_KEY="sk-ant-..."
+  api_key_env: "KLAUDE_API_KEY"
   api_format: "anthropic"
   model: "claude-haiku-4-5-20251001"
   max_tokens: 4096
