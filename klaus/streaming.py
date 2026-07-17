@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from rich.console import Console
+    from rich.live import Live
 
 
 class StreamRenderer:
@@ -18,7 +19,10 @@ class StreamRenderer:
         full_text = renderer.stop()
     """
 
-    def __init__(self, console: "Console") -> None:
+    if TYPE_CHECKING:
+        _live: Live | None
+
+    def __init__(self, console: Console) -> None:
         self._console = console
         self._buf: list[str] = []
         self._live = None

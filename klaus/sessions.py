@@ -154,7 +154,7 @@ class SessionLock:
         except OSError:
             pass
 
-    def __enter__(self) -> "SessionLock":
+    def __enter__(self) -> SessionLock:
         return self
 
     def __exit__(self, *_: Any) -> None:

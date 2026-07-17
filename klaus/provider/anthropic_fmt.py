@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json as _json
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from ..config import KlausConfig
 from .base import ProviderAdapter

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-import pytest
+
 from rich.console import Console
 
 from klaus.streaming import StreamRenderer

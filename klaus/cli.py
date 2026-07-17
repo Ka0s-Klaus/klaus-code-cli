@@ -6,7 +6,6 @@ import asyncio
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -61,9 +60,9 @@ def _get_adapter(config: KlausConfig) -> ProviderAdapter:
 @app.command()
 def run(
     prompt: str = typer.Argument(..., help="Prompt para el agente"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
-    base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
-    project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Override de modelo"),
+    base_url: str | None = typer.Option(None, "--base-url", help="Override de base URL"),
+    project: str | None = typer.Option(None, "--project", help="Directorio del proyecto"),
     plan: bool = typer.Option(False, "--plan", help="Modo plan: propone un plan de acción antes de ejecutar"),
     allow_writes: bool = typer.Option(
         False, "--allow-writes",
@@ -260,10 +259,10 @@ async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
 
 @app.command()
 def repl(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Override de modelo"),
-    base_url: Optional[str] = typer.Option(None, "--base-url", help="Override de base URL"),
-    project: Optional[str] = typer.Option(None, "--project", help="Directorio del proyecto"),
-    session: Optional[str] = typer.Option(
+    model: str | None = typer.Option(None, "--model", "-m", help="Override de modelo"),
+    base_url: str | None = typer.Option(None, "--base-url", help="Override de base URL"),
+    project: str | None = typer.Option(None, "--project", help="Directorio del proyecto"),
+    session: str | None = typer.Option(
         None, "--session",
         help="Nombre de sesión personalizado (default: hash SHA1 del project_root). "
              "Útil para abrir sesiones paralelas en el mismo directorio.",
@@ -477,7 +476,7 @@ def sessions_show(
 
 @sessions_app.command("clear")
 def sessions_clear(
-    session_id: Optional[str] = typer.Argument(
+    session_id: str | None = typer.Argument(
         None,
         help="ID de la sesión a borrar. Omitir junto con --all para borrar todas.",
     ),
@@ -489,8 +488,9 @@ def sessions_clear(
     ),
 ) -> None:
     """Borra una sesión específica o todas las sesiones guardadas."""
-    from .sessions import clear_all_sessions, delete_session
     from rich.prompt import Confirm
+
+    from .sessions import clear_all_sessions, delete_session
 
     if not session_id and not all_sessions:
         console.print("[red]Error:[/red] Especifica un <session_id> o usa --all")
@@ -522,6 +522,7 @@ def sessions_clear(
             console.print("[dim]Cancelado.[/dim]")
             return
 
+    assert session_id is not None  # garantizado por guards previos
     deleted = delete_session(config.session.storage_path, session_id)
     if deleted:
         console.print(f"[green]✅[/green]  Sesión [cyan]{session_id}[/cyan] eliminada.")
