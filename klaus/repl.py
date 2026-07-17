@@ -33,11 +33,12 @@ _SPECIAL_COMMANDS = {
     "/help": "Mostrar este mensaje de ayuda",
     "/history": "Mostrar el historial de mensajes de la sesión actual",
     "/sessions": "Listar sesiones guardadas en disco",
+    "/tokens": "Mostrar el conteo de tokens acumulados en la sesión actual",
 }
 
 
 def _print_welcome(
-    version: str, session_id: str, persist: bool, resumed: bool, streaming: bool
+    version: str, session_id: str, persist: bool, resumed: bool, streaming: bool, yolo: bool = False
 ) -> None:
     session_line = (
         f"[dim]Sesión:[/dim] [cyan]{session_id}[/cyan]"
@@ -46,10 +47,11 @@ def _print_welcome(
     )
     resumed_line = "  [green]↩ Historial previo cargado[/green]" if resumed else ""
     stream_line = "  [dim]streaming: on[/dim]" if streaming else "  [dim]streaming: off[/dim]"
+    yolo_line = "  [yellow bold]⚡ YOLO MODE[/yellow bold] [dim](sin confirmaciones interactivas)[/dim]" if yolo else ""
     console.print(
         Panel(
             f"[bold cyan]🤖 Klaus Code CLI[/bold cyan] [dim]v{version}[/dim] — [bold]REPL interactivo[/bold]\n\n"
-            f"{session_line}{resumed_line}{stream_line}\n\n"
+            f"{session_line}{resumed_line}{stream_line}{yolo_line}\n\n"
             "[dim]Escribe un prompt y pulsa Enter. El modelo recuerda el contexto de la sesión.\n"
             "Comandos: [cyan]/help[/cyan]  [cyan]/clear[/cyan]  [cyan]/history[/cyan]  "
             "[cyan]/sessions[/cyan]  [cyan]/exit[/cyan] · Ctrl+D para salir[/dim]",
@@ -120,6 +122,7 @@ async def run_repl(
     session_name: str | None = None,
     persist: bool = True,
     streaming: bool = True,
+    yolo: bool = False,
 ) -> int:
     """Arranca el REPL interactivo — mantiene historial entre turnos del usuario."""
     configure_confirmations(
@@ -170,6 +173,7 @@ async def run_repl(
             persist=effective_persist,
             resumed=resumed,
             streaming=effective_streaming,
+            yolo=yolo,
         )
 
         return await _repl_loop(
@@ -202,6 +206,8 @@ async def _repl_loop(
     streaming: bool,
 ) -> int:
     """Loop principal del REPL."""
+    session_input_tokens: int = 0
+    session_output_tokens: int = 0
     while True:
         try:
             user_input = input(_PROMPT)
@@ -232,12 +238,26 @@ async def _repl_loop(
         if cmd == "/history":
             _print_history(messages)
             continue
+        if cmd == "/tokens":
+            from rich.panel import Panel as _Panel
+            total = session_input_tokens + session_output_tokens
+            console.print(
+                _Panel(
+                    f"[cyan]Input:[/cyan]  {session_input_tokens:,} tokens\n"
+                    f"[green]Output:[/green] {session_output_tokens:,} tokens\n"
+                    f"[bold]Total:[/bold]   {total:,} tokens",
+                    title="[bold]📊 Tokens de sesión[/bold]",
+                    border_style="dim",
+                    padding=(0, 2),
+                )
+            )
+            continue
         if cmd == "/sessions":
             _print_sessions(config.session.storage_path)
             continue
 
         messages.append({"role": "user", "content": stripped})
-        messages = await _run_turn(
+        messages, turn_in, turn_out = await _run_turn(
             messages=messages,
             adapter=adapter,
             config=config,
@@ -247,6 +267,8 @@ async def _repl_loop(
             active_handlers=active_handlers,
             streaming=streaming,
         )
+        session_input_tokens += turn_in
+        session_output_tokens += turn_out
 
         if persist:
             try:
@@ -264,8 +286,8 @@ async def _run_turn(
     active_schemas: list[dict[str, Any]],
     active_handlers: dict[str, Any],
     streaming: bool = True,
-) -> list[dict[str, Any]]:
-    """Procesa un turno completo (usuario → modelo → tools* → modelo) y devuelve los mensajes actualizados."""
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Procesa un turno (usuario → modelo → tools* → modelo). Devuelve (mensajes, tokens_input, tokens_output)."""
     max_turns = config.behavior.max_agent_turns
     total_input: int = 0
     total_output: int = 0
@@ -290,7 +312,7 @@ async def _run_turn(
         except Exception as e:
             renderer.stop()
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
-            return messages
+            return messages, total_input, total_output
 
         renderer.stop()
 
@@ -316,7 +338,7 @@ async def _run_turn(
         if stop == "end_turn" or not tool_calls:
             if response.get("content"):
                 messages.append({"role": "assistant", "content": response["content"]})
-            return messages
+            return messages, total_input, total_output
 
         if stop == "tool_use":
             messages.append({"role": "assistant", "content": response["content"]})
@@ -345,9 +367,9 @@ async def _run_turn(
 
         if stop == "max_tokens":
             console.print("[yellow]⚠️  Límite de tokens alcanzado en este turno[/yellow]")
-        return messages
+        return messages, total_input, total_output
 
     console.print(
         f"[yellow]⚠️  Límite de {max_turns} turnos alcanzado para este input[/yellow]"
     )
-    return messages
+    return messages, total_input, total_output
