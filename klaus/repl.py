@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import readline  # noqa: F401 — activa historial y edición de línea por defecto en Linux/Mac
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +18,7 @@ from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .sessions import SessionLock, SessionManager, list_sessions
+from .streaming import StreamRenderer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
 from .agent import _dispatch_tool
 
@@ -270,18 +270,16 @@ async def _run_turn(
     total_input: int = 0
     total_output: int = 0
 
-    def _on_token(token: str) -> None:
-        sys.stdout.write(token)
-        sys.stdout.flush()
-
     for turn in range(max_turns):
+        renderer = StreamRenderer(console)
+        renderer.start()
         try:
             if streaming:
                 response = await adapter.stream_message(
                     messages=messages,
                     tools=active_schemas,
                     system=system_prompt,
-                    on_token=_on_token,
+                    on_token=renderer.on_token,
                 )
             else:
                 response = await adapter.send_message(
@@ -290,8 +288,11 @@ async def _run_turn(
                     system=system_prompt,
                 )
         except Exception as e:
+            renderer.stop()
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
             return messages
+
+        renderer.stop()
 
         usage = adapter.extract_usage(response)
         total_input += usage["input_tokens"]
@@ -300,12 +301,7 @@ async def _run_turn(
         stop = adapter.stop_reason(response)
         tool_calls = adapter.extract_tool_calls(response)
 
-        if streaming:
-            # Texto ya impreso via _on_token — añadir newline si hubo texto
-            if adapter.extract_text(response):
-                sys.stdout.write("\n")
-                sys.stdout.flush()
-        else:
+        if not streaming:
             text = adapter.extract_text(response)
             if text:
                 console.print(Markdown(text))

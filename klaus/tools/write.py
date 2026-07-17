@@ -15,13 +15,15 @@ from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm
+from rich.prompt import Prompt
 from rich.syntax import Syntax
 
 console = Console()
 
 # Puesto en False por el futuro modo --yolo / --allow-writes
 CONFIRM_WRITES: bool = True
+# Flag de sesión — activado cuando el usuario elige "aprobar todo" en el prompt enriquecido
+_APPROVE_ALL: bool = False
 
 
 def _resolve(path: str, cwd: Path | None) -> Path:
@@ -55,10 +57,39 @@ def _show_diff(diff_text: str, title: str) -> None:
     )
 
 
-def _confirm(prompt: str) -> bool:
-    if not CONFIRM_WRITES:
+def _confirm(prompt: str, diff_text: str | None = None) -> bool:
+    """Prompt enriquecido: [s]í / [N]o / [d]iff completo / [a]probar todo."""
+    global _APPROVE_ALL
+    if not CONFIRM_WRITES or _APPROVE_ALL:
         return True
-    return Confirm.ask(prompt, default=False)
+
+    extra = "/[bold]d[/bold]iff" if diff_text else ""
+    while True:
+        answer = Prompt.ask(
+            f"{prompt} [[bold]s[/bold]/[bold]N[/bold]{extra}/[bold]a[/bold]]",
+            default="N",
+            console=console,
+        ).strip().lower()
+
+        if answer in ("s", "si", "sí", "y", "yes"):
+            return True
+        if answer in ("n", "no", ""):
+            return False
+        if answer == "a":
+            _APPROVE_ALL = True
+            console.print("[dim]✅ Aprobación automática activada para el resto de este plan.[/dim]")
+            return True
+        if answer == "d" and diff_text:
+            console.print(
+                Panel(
+                    Syntax(diff_text, "diff", theme="monokai", line_numbers=True),
+                    title="[yellow]📄 Diff completo[/yellow]",
+                    border_style="yellow",
+                )
+            )
+        else:
+            opts = "s/N" + ("/d" if diff_text else "") + "/a"
+            console.print(f"[dim]Opciones válidas: {opts}[/dim]")
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +108,8 @@ async def write_file(
     if target.exists() and not target.is_file():
         return {"error": f"La ruta existe y no es un fichero: {path}"}
 
+    diff_for_confirm: str | None = None
+
     if target.exists():
         old_text = target.read_text(encoding="utf-8", errors="replace")
         old_lines = old_text.splitlines(keepends=True)
@@ -85,6 +118,7 @@ async def write_file(
         _show_diff(diff, f"[yellow]✏️  write_file → {path}[/yellow]")
         if not diff.strip():
             return {"status": "no_changes", "path": str(target)}
+        diff_for_confirm = diff
     else:
         # Fichero nuevo — mostrar el contenido completo
         preview_lines = content.splitlines()
@@ -98,8 +132,9 @@ async def write_file(
                 border_style="green",
             )
         )
+        diff_for_confirm = preview
 
-    if not _confirm(f"¿Escribir '{path}'?"):
+    if not _confirm(f"¿Escribir '{path}'?", diff_text=diff_for_confirm):
         return {"status": "cancelled", "path": str(target)}
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -158,7 +193,7 @@ async def edit_file(
     diff = _unified_diff(old_lines, new_lines, fromfile=f"a/{path}", tofile=f"b/{path}")
     _show_diff(diff, f"[yellow]✏️  edit_file → {path}[/yellow]")
 
-    if not _confirm(f"¿Aplicar edición en '{path}'?"):
+    if not _confirm(f"¿Aplicar edición en '{path}'?", diff_text=diff):
         return {"status": "cancelled", "path": str(target)}
 
     target.write_text(new_text, encoding="utf-8")

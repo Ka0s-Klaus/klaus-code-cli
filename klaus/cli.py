@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,7 @@ import typer
 from rich.console import Console
 from rich.live import Live
 from rich.spinner import Spinner
+from rich.table import Table
 
 from . import __version__
 from .config import CONFIG_PATH, DEFAULT_CONFIG_YAML, KlausConfig, load_config
@@ -23,6 +25,9 @@ app = typer.Typer(
 )
 config_app = typer.Typer(help="Gestión de configuración")
 app.add_typer(config_app, name="config")
+
+sessions_app = typer.Typer(help="Gestión de sesiones REPL guardadas")
+app.add_typer(sessions_app, name="sessions")
 
 console = Console()
 
@@ -377,6 +382,149 @@ def version_cb(
     if version:
         console.print(f"[bold]Klaus Code CLI[/bold] v{__version__}")
         raise typer.Exit()
+
+
+
+@sessions_app.command("list")
+def sessions_list() -> None:
+    """Lista todas las sesiones guardadas en disco."""
+    from .sessions import list_sessions as _list_sessions
+
+    try:
+        config = load_config()
+    except Exception as e:
+        console.print(f"[red]Error de configuración:[/red] {e}")
+        raise typer.Exit(4)
+
+    sessions = _list_sessions(config.session.storage_path)
+    if not sessions:
+        console.print("[dim]No hay sesiones guardadas.[/dim]")
+        return
+
+    table = Table(show_header=True, box=None, padding=(0, 2))
+    table.add_column("ID de sesión", style="cyan")
+    table.add_column("Mensajes", style="dim", justify="right")
+    table.add_column("Tamaño", style="dim", justify="right")
+    table.add_column("Última modificación", style="dim")
+    for s in sessions:
+        ts = datetime.fromtimestamp(s["modified"]).strftime("%Y-%m-%d %H:%M")
+        table.add_row(s["session_id"], str(s["messages"]), f"{s['size_kb']} KB", ts)
+
+    from rich.panel import Panel as _Panel
+    console.print(
+        _Panel(
+            table,
+            title=f"[bold]Sesiones guardadas ({len(sessions)})[/bold]",
+            border_style="dim",
+            padding=(1, 1),
+        )
+    )
+
+
+@sessions_app.command("show")
+def sessions_show(
+    session_id: str = typer.Argument(..., help="ID de la sesión"),
+    raw: bool = typer.Option(False, "--raw", help="Muestra el JSON crudo sin formatear"),
+) -> None:
+    """Muestra el historial de mensajes de una sesión."""
+    from .sessions import get_session
+
+    try:
+        config = load_config()
+    except Exception as e:
+        console.print(f"[red]Error de configuración:[/red] {e}")
+        raise typer.Exit(4)
+
+    messages = get_session(config.session.storage_path, session_id)
+    if messages is None:
+        console.print(f"[red]Sesión no encontrada:[/red] {session_id}")
+        raise typer.Exit(1)
+
+    if not messages:
+        console.print("[dim]La sesión está vacía.[/dim]")
+        return
+
+    if raw:
+        import json as _json
+        console.print_json(_json.dumps(messages, ensure_ascii=False, indent=2))
+        return
+
+    for i, msg in enumerate(messages):
+        role = msg.get("role", "?")
+        content = msg.get("content", "")
+        color = "cyan" if role == "user" else "green"
+        if isinstance(content, list):
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                btype = block.get("type", "?")
+                if btype == "tool_use":
+                    name = block.get("name", "?")
+                    console.print(f"[dim]{i + 1:2d}[/dim] [yellow]{role:9s}[/yellow] 🔧 {name}()")
+                elif btype == "tool_result":
+                    tid = block.get("tool_use_id", "?")[:8]
+                    console.print(f"[dim]{i + 1:2d}[/dim] [dim]{role:9s}[/dim] 📤 result:{tid}…")
+                elif btype == "text":
+                    text = block.get("text", "")[:200]
+                    console.print(f"[dim]{i + 1:2d}[/dim] [{color}]{role:9s}[/{color}] {text}")
+        elif isinstance(content, str):
+            truncated = content[:200] + ("…" if len(content) > 200 else "")
+            console.print(f"[dim]{i + 1:2d}[/dim] [{color}]{role:9s}[/{color}] {truncated}")
+
+
+@sessions_app.command("clear")
+def sessions_clear(
+    session_id: Optional[str] = typer.Argument(
+        None,
+        help="ID de la sesión a borrar. Omitir junto con --all para borrar todas.",
+    ),
+    all_sessions: bool = typer.Option(
+        False, "--all", help="Borra todas las sesiones guardadas en disco."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Confirmar sin prompt interactivo."
+    ),
+) -> None:
+    """Borra una sesión específica o todas las sesiones guardadas."""
+    from .sessions import clear_all_sessions, delete_session
+    from rich.prompt import Confirm
+
+    if not session_id and not all_sessions:
+        console.print("[red]Error:[/red] Especifica un <session_id> o usa --all")
+        raise typer.Exit(1)
+
+    try:
+        config = load_config()
+    except Exception as e:
+        console.print(f"[red]Error de configuración:[/red] {e}")
+        raise typer.Exit(4)
+
+    if all_sessions:
+        if not yes:
+            confirmed = Confirm.ask(
+                "[yellow]¿Borrar TODAS las sesiones guardadas?[/yellow]", default=False
+            )
+            if not confirmed:
+                console.print("[dim]Cancelado.[/dim]")
+                return
+        count = clear_all_sessions(config.session.storage_path)
+        console.print(f"[green]✅[/green]  {count} sesión(es) eliminada(s).")
+        return
+
+    if not yes:
+        confirmed = Confirm.ask(
+            f"[yellow]¿Borrar la sesión[/yellow] [cyan]{session_id}[/cyan]?", default=False
+        )
+        if not confirmed:
+            console.print("[dim]Cancelado.[/dim]")
+            return
+
+    deleted = delete_session(config.session.storage_path, session_id)
+    if deleted:
+        console.print(f"[green]✅[/green]  Sesión [cyan]{session_id}[/cyan] eliminada.")
+    else:
+        console.print(f"[red]Sesión no encontrada:[/red] {session_id}")
+        raise typer.Exit(1)
 
 
 def main() -> None:

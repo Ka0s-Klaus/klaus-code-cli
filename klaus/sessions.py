@@ -180,3 +180,42 @@ def list_sessions(storage_path: str) -> list[dict[str, Any]]:
         except (OSError, json.JSONDecodeError):
             pass
     return sessions
+
+
+def get_session(storage_path: str, session_id: str) -> list[dict[str, Any]] | None:
+    """Carga el historial de una sesión por su ID. Devuelve None si no existe o está corrupto."""
+    session_dir = _session_dir(storage_path)
+    path = session_dir / f"{session_id}.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else None
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def delete_session(storage_path: str, session_id: str) -> bool:
+    """Elimina una sesión por su ID. Devuelve True si se eliminó, False si no existía."""
+    session_dir = _session_dir(storage_path)
+    path = session_dir / f"{session_id}.json"
+    if not path.exists():
+        return False
+    try:
+        path.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def clear_all_sessions(storage_path: str) -> int:
+    """Elimina todas las sesiones guardadas. Devuelve el número de sesiones eliminadas."""
+    session_dir = _session_dir(storage_path)
+    count = 0
+    for p in session_dir.glob("*.json"):
+        try:
+            p.unlink()
+            count += 1
+        except OSError:
+            pass
+    return count
