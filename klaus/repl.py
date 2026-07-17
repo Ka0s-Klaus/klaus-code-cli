@@ -13,6 +13,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 
+from .agent import _dispatch_tool
 from .config import KlausConfig
 from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
@@ -20,7 +21,6 @@ from .provider.base import ProviderAdapter
 from .sessions import SessionLock, SessionManager, list_sessions
 from .streaming import StreamRenderer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
-from .agent import _dispatch_tool
 
 console = Console()
 

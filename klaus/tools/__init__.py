@@ -6,7 +6,8 @@ y TOOL_HANDLERS (dict nombre→función async).
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .bash import run_bash
 from .files import list_directory, read_file
@@ -291,7 +292,7 @@ def configure_confirmations(
     auto_approve_bash: bool = False,
 ) -> None:
     """Aplica los flags de modo no interactivo a los módulos de tools."""
-    from . import write, bash
+    from . import bash, write
     write.CONFIRM_WRITES = not auto_approve_writes
     write._APPROVE_ALL = False  # reset "aprobar todo" al iniciar nueva sesión/agente
     bash.CONFIRM_BASH = not auto_approve_bash

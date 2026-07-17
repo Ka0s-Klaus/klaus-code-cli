@@ -8,8 +8,8 @@ import pytest
 @pytest.fixture(autouse=True)
 def disable_confirmations():
     """Desactiva todos los prompts de confirmación durante los tests."""
-    import klaus.tools.write as wm
     import klaus.tools.bash as bm
+    import klaus.tools.write as wm
 
     orig_write = wm.CONFIRM_WRITES
     orig_bash = bm.CONFIRM_BASH
