@@ -19,13 +19,10 @@ class StreamRenderer:
         full_text = renderer.stop()
     """
 
-    if TYPE_CHECKING:
-        _live: Live | None
-
     def __init__(self, console: Console) -> None:
         self._console = console
         self._buf: list[str] = []
-        self._live = None
+        self._live: Live | None = None
 
     def start(self) -> None:
         """Arranca el spinner de espera hasta el primer token (TTFT)."""
