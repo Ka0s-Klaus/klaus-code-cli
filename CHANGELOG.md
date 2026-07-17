@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] — Fix: KLAUDE_API_KEY opcional
+## [Unreleased] — Fix: KLAUDE_API_KEY opcional + inject working directory
 
 ### Fixed
 - `cli.py`: eliminadas guardas `if not config.api_key` en `run()`, `repl()` e `init --scan` — ya no bloquean el arranque cuando no hay API key definida en el cliente
@@ -13,11 +13,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `anthropic_fmt.py`: header `x-api-key` solo se incluye si `api_key` no es `None`
 - `openai_fmt.py`: header `Authorization: Bearer` solo se incluye si `api_key` no es `None`
 
+### Added
+- `context.py`: `load_project_context` inyecta `Working directory: <path>` al inicio del system prompt — el modelo sabe en qué directorio opera con o sin CLAUDE.md
+
 ### Context
 Cuando se usa klaude-proxy como backend, la API key de Anthropic vive en el proxy.
 El cliente (Klaus) solo necesita `KLAUDE_PROXY_URL` — no tiene por qué conocer la key real.
 
-**Files:** `Klaus/config.py`, `Klaus/provider/anthropic_fmt.py`, `Klaus/provider/openai_fmt.py`, `Klaus/cli.py`
+Al ejecutar `Klaus repl` desde un directorio de proyecto, el LLM recibe el path de trabajo
+en el system prompt, garantizando que los tool calls con rutas relativas se resuelvan correctamente.
+
+**Files:** `Klaus/config.py`, `Klaus/provider/anthropic_fmt.py`, `Klaus/provider/openai_fmt.py`, `Klaus/cli.py`, `Klaus/context.py`
 **Issue:** [#39](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/39)
 
 ---
