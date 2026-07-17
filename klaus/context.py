@@ -59,6 +59,8 @@ def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str
     """Carga CLAUS.md/CLAUDE.md si existe y devuelve el contexto del proyecto."""
     result: dict[str, Any] = {"root": str(project_root)}
 
+    base_context = f"Working directory: {project_root}\n\n"
+
     # CLAUS.md (formato Klaus) tiene prioridad; CLAUDE.md y .CLAUDE.md como fallback
     for name in ("KLAUS.md", "CLAUDE.md", ".CLAUDE.md"):
         candidate = project_root / name
@@ -68,9 +70,11 @@ def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str
             char_limit = max_tokens * 4
             if len(text) > char_limit:
                 text = text[:char_limit] + "\n\n[TRUNCADO]"
-            result["system_prompt"] = text
+            result["system_prompt"] = base_context + text
             result["system_prompt_source"] = name
             break
+    else:
+        result["system_prompt"] = base_context.rstrip()
 
     return result
 

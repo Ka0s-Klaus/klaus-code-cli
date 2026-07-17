@@ -24,13 +24,15 @@ def _is_retryable(exc: BaseException) -> bool:
 class AnthropicAdapter(ProviderAdapter):
     def __init__(self, config: KlausConfig) -> None:
         self._config = config
+        _headers: dict[str, str] = {
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        if config.api_key:
+            _headers["x-api-key"] = config.api_key
         self._client = httpx.AsyncClient(
             base_url=config.provider.base_url,
-            headers={
-                "x-api-key": config.api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
+            headers=_headers,
             timeout=config.network.timeout_seconds,
         )
 

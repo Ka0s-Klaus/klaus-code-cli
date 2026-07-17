@@ -67,8 +67,9 @@ class KlausConfig(BaseModel):
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
 
     @property
-    def api_key(self) -> str:
-        return os.getenv(self.provider.api_key_env, "")
+    def api_key(self) -> str | None:
+        val = os.getenv(self.provider.api_key_env)
+        return val or None
 
 
 def load_config(
