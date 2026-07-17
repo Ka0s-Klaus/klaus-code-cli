@@ -31,6 +31,7 @@ async def _run_git(args: list[str], cwd: Path) -> tuple[int, str, str]:
     stdout_bytes, stderr_bytes = await proc.communicate()
     stdout = stdout_bytes.decode("utf-8", errors="replace")
     stderr = stderr_bytes.decode("utf-8", errors="replace")
+    assert proc.returncode is not None
     return proc.returncode, stdout, stderr
 
 
@@ -92,7 +93,7 @@ async def git_diff(
 
     truncated = False
     if len(stdout) > OUTPUT_CHAR_LIMIT:
-        stdout = stdout[:OUTPUT_CHAR_LIMIT] + f"\n... [TRUNCADO — más contenido omitido]"
+        stdout = stdout[:OUTPUT_CHAR_LIMIT] + "\n... [TRUNCADO — más contenido omitido]"
         truncated = True
 
     title_suffix = " --staged" if staged else ""
@@ -124,17 +125,15 @@ async def git_commit(
     - paths: lista de ficheros a añadir. Si None y add_all=False, solo hace commit de lo staged.
     - add_all: equivalente a git add -A (todos los cambios).
     """
-    from .write import CONFIRM_WRITES
     from rich.prompt import Confirm
+
+    from .write import CONFIRM_WRITES
 
     work_dir = cwd or Path.cwd()
 
     # Calcular qué se va a commitear — mostrar diff staged primero
     if paths or add_all:
         # Simular el add para mostrar el diff resultante
-        add_args = ["-A"] if add_all else list(paths)  # type: ignore[arg-type]
-        # Mostrar diff unstaged de los paths que se van a añadir
-        diff_args = ["diff", "--"] + (paths if paths else [])
         _, diff_out, _ = await _run_git(["diff", "--stat"] + (["--"] + paths if paths else []), work_dir)
         if add_all:
             _, diff_out, _ = await _run_git(["diff", "--stat"], work_dir)

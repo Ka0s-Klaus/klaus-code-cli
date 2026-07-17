@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import contextlib
 import os
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from rich.console import Console
 

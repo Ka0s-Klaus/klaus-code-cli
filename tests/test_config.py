@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from klaus.config import KlausConfig, load_config
 
 
