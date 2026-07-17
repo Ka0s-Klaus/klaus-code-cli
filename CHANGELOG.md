@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Feat: KLAUDE_PROXY_URL
+
+### Added
+- `Klaus/config.py`: env var `KLAUDE_PROXY_URL` — URL del proxy klaude, sobreescribe `base_url` sin tocar `config.yaml`
+- `Klaus/config.py`: env vars `KLAUDE_MODEL` y `KLAUDE_API_FORMAT` — consistencia de naming con `KLAUDE_PROXY_URL`
+- `docs/configuration.md`: sección **🤖 Integración con klaude-proxy** — documenta `KLAUDE_PROXY_URL`, `KLAUDE_API_KEY`, prioridad de configuración y flowchart Mermaid
+- `Klaus/config.py`: comentarios inline en `DEFAULT_CONFIG_YAML` sobre `KLAUDE_PROXY_URL` y `KLAUDE_API_KEY`
+
+### Changed
+- `Klaus/config.py`: env var renombrado de `Klaus_BASE_URL` → `KLAUDE_PROXY_URL` (nombre explícito, autodocumentado)
+- `docs/configuration.md`: tabla "Valores recomendados por proveedor" reenfocada en klaude-proxy como backend primario
+
+**Files:** `Klaus/config.py`, `docs/configuration.md`, `CHANGELOG.md`
+**Issue:** [#36](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/36)
+**PR:** pending
+
+---
+
+
 ## [Unreleased] — Fase 16: Developer UX
 
 ### Added
