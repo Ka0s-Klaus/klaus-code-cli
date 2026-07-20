@@ -47,7 +47,7 @@ class ContextConfig(BaseModel):
 class NetworkConfig(BaseModel):
     max_retries: int = 3
     backoff_base_seconds: float = 1.5
-    timeout_seconds: int = 120
+    timeout_seconds: int = 600
 
 
 class MCPServerConfig(BaseModel):

@@ -27,7 +27,7 @@ Klaus Code CLI se diseñó para conectarse exclusivamente a **klaude-proxy** —
 ### Variables de entorno (responsabilidad del usuario)
 
 | Variable | Descripción | Ejemplo |
-|---|---|---|
+| --- | --- | --- |
 | `KLAUDE_PROXY_URL` | URL completa del proxy, incluyendo `/v1` | `http://192.168.1.50:8080/v1` |
 | `KLAUDE_API_KEY` | API key enviada al proxy como `x-api-key` | `sk-ant-api03-...` |
 
@@ -83,7 +83,7 @@ provider:
 ### Configuraciones habituales
 
 | Escenario | `base_url` | `api_format` | Notas |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **klaude-proxy local** | `http://localhost:8080/v1` | `anthropic` | Default — proxy en la misma máquina |
 | **klaude-proxy en red** | `http://192.168.1.50:8080/v1` | `anthropic` | Proxy en otro host de la LAN |
 | **Anthropic directo** | `https://api.anthropic.com` | `anthropic` | Sin proxy — coste y latencia directos |
@@ -168,7 +168,7 @@ Controla reintentos y timeouts hacia el proveedor.
 network:
   max_retries: 3             # Reintentos ante errores 5xx
   backoff_base_seconds: 1.5  # Base del backoff exponencial (1.5, 2.25, 3.375...)
-  timeout_seconds: 120       # Timeout por request al proveedor
+  timeout_seconds: 600       # Timeout por request al proveedor (600s para modelos thinking como kdev:latest)
 ```
 
 ---
