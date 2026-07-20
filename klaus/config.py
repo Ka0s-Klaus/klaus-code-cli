@@ -27,6 +27,7 @@ class BehaviorConfig(BaseModel):
     auto_approve_writes: bool = False
     auto_approve_bash: bool = False
     max_agent_turns: int = 25
+    max_agent_depth: int = 3
     plan_mode: bool = False
     streaming: bool = True
 

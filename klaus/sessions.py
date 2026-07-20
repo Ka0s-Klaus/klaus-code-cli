@@ -219,3 +219,95 @@ def clear_all_sessions(storage_path: str) -> int:
         except OSError:
             pass
     return count
+
+
+# ─── Checkpoints ─────────────────────────────────────────────────────────────
+
+
+def save_checkpoint(
+    storage_path: str,
+    session_id: str,
+    messages: list[dict[str, Any]],
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Guarda un checkpoint nombrado del estado actual de la conversación.
+
+    Returns:
+        Dict con checkpoint_id, path y metadata.
+    """
+    import time
+
+    session_dir = _session_dir(storage_path)
+    ts = int(time.time())
+    checkpoint_id = f"{session_id}-ckpt-{ts}"
+    if name:
+        safe_name = name.replace(" ", "_").replace("/", "-")[:32]
+        checkpoint_id = f"{session_id}-ckpt-{ts}-{safe_name}"
+
+    cp_path = session_dir / f"{checkpoint_id}.json"
+    payload: dict[str, Any] = {
+        "checkpoint_id": checkpoint_id,
+        "session_id": session_id,
+        "name": name or checkpoint_id,
+        "timestamp": ts,
+        "messages": messages,
+    }
+
+    fd, tmp_path = tempfile.mkstemp(dir=session_dir, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        os.chmod(tmp_path, 0o600)
+        os.rename(tmp_path, cp_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+
+    return {
+        "checkpoint_id": checkpoint_id,
+        "path": str(cp_path),
+        "messages": len(messages),
+        "name": name or checkpoint_id,
+    }
+
+
+def list_checkpoints(storage_path: str, session_id: str) -> list[dict[str, Any]]:
+    """Lista todos los checkpoints de una sesión."""
+    from datetime import datetime
+
+    session_dir = _session_dir(storage_path)
+    checkpoints = []
+    pattern = f"{session_id}-ckpt-*.json"
+
+    for p in sorted(session_dir.glob(pattern)):
+        try:
+            stat = p.stat()
+            data = json.loads(p.read_text(encoding="utf-8"))
+            checkpoints.append({
+                "checkpoint_id": data.get("checkpoint_id", p.stem),
+                "name": data.get("name", p.stem),
+                "messages": len(data.get("messages", [])),
+                "timestamp": data.get("timestamp", stat.st_mtime),
+                "modified": stat.st_mtime,
+                "size_kb": round(stat.st_size / 1024, 1),
+            })
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    return checkpoints
+
+
+def load_checkpoint(storage_path: str, checkpoint_id: str) -> list[dict[str, Any]] | None:
+    """Carga las messages de un checkpoint. Devuelve None si no existe."""
+    session_dir = _session_dir(storage_path)
+    cp_path = session_dir / f"{checkpoint_id}.json"
+    if not cp_path.exists():
+        return None
+    try:
+        data = json.loads(cp_path.read_text(encoding="utf-8"))
+        return data.get("messages", [])
+    except (json.JSONDecodeError, OSError):
+        return None

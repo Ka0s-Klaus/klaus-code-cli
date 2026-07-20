@@ -236,8 +236,12 @@ async def _dispatch_tool(
     config: KlausConfig,
     cwd: Path,
     handlers: dict[str, Any] | None = None,
+    hook_runner: "HookRunner | None" = None,
+    session_id: str = "",
 ) -> Any:
-    """Despacha una tool call al handler correspondiente."""
+    """Despacha una tool call al handler correspondiente, con hooks opcionales."""
+    from .hooks import HookRunner  # import local evita circular
+
     name = tool_call.get("name", "")
     args = tool_call.get("input", {})
 
@@ -248,12 +252,28 @@ async def _dispatch_tool(
 
     _print_tool_call(name, args)
 
+    # ── PreToolUse hook ──────────────────────────────────────────────────────
+    runner = hook_runner or HookRunner(project_root=cwd)
+    allowed = await runner.run_pre_tool(name, args, session_id=session_id)
+    if not allowed:
+        return {"error": f"Ejecución de {name} bloqueada por hook PreToolUse"}
+
     try:
         result = await handler(**args, cwd=cwd)
     except TypeError:
-        result = await handler(**args)
+        try:
+            result = await handler(**args)
+        except Exception as e:
+            result = {"error": f"Error ejecutando {name}: {e}"}
+            await runner.run_post_tool_error(name, args, str(e), session_id=session_id)
+            return result
     except Exception as e:
         result = {"error": f"Error ejecutando {name}: {e}"}
+        await runner.run_post_tool_error(name, args, str(e), session_id=session_id)
+        return result
+
+    # ── PostToolUse hook ─────────────────────────────────────────────────────
+    await runner.run_post_tool(name, args, result, session_id=session_id)
 
     return result
 
