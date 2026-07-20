@@ -302,6 +302,7 @@ async def _run_turn(
                     tools=active_schemas,
                     system=system_prompt,
                     on_token=renderer.on_token,
+                    on_thinking=renderer.on_thinking,
                 )
             else:
                 response = await adapter.send_message(
