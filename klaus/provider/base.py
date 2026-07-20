@@ -24,9 +24,11 @@ class ProviderAdapter(ABC):
         tools: list[dict[str, Any]] | None = None,
         system: str | None = None,
         on_token: Callable[[str], None] | None = None,
+        on_thinking: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
         """Stream tokens via on_token callback. Returns complete response dict.
 
+        on_thinking recibe tokens de reasoning (thinking blocks) en tiempo real.
         Default: falls back to send_message (batch mode).
         Subclasses override para streaming real token a token.
         """

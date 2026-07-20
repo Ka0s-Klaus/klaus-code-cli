@@ -68,8 +68,12 @@ class AnthropicAdapter(ProviderAdapter):
         tools: list[dict[str, Any]] | None = None,
         system: str | None = None,
         on_token: Callable[[str], None] | None = None,
+        on_thinking: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
-        """Stream tokens via SSE (Anthropic format). Fallback a send_message en error."""
+        """Stream tokens via SSE (Anthropic format). Fallback a send_message en error.
+
+        on_thinking recibe tokens thinking_delta en tiempo real para modelos reasoning.
+        """
         payload: dict[str, Any] = {
             "model": self._config.provider.model,
             "max_tokens": self._config.provider.max_tokens,
@@ -127,6 +131,10 @@ class AnthropicAdapter(ProviderAdapter):
                                 full_text += token
                                 if on_token:
                                     on_token(token)
+                        elif dtype == "thinking_delta":
+                            thinking_token = delta.get("thinking", "")
+                            if thinking_token and on_thinking:
+                                on_thinking(thinking_token)
                         elif dtype == "input_json_delta" and tool_calls:
                             tool_calls[-1]["_input_json"] += delta.get("partial_json", "")
 
