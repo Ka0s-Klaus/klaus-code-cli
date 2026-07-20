@@ -253,6 +253,16 @@ def repl(
         help="Nombre de sesión personalizado (default: hash SHA1 del project_root). "
              "Útil para abrir sesiones paralelas en el mismo directorio.",
     ),
+    resume: str | None = typer.Option(
+        None, "--resume",
+        help="Reanuda una sesión existente por su ID (e.g. --resume abc123def456). "
+             "El ID puede obtenerse con `Klaus sessions list`.",
+    ),
+    restore: str | None = typer.Option(
+        None, "--restore",
+        help="Restaura el historial desde un checkpoint (e.g. --restore <checkpoint-id>). "
+             "El ID puede obtenerse con /checkpoints en el REPL.",
+    ),
     no_persist: bool = typer.Option(
         False, "--no-persist",
         help="Desactiva el guardado de historial en disco para esta ejecución. "
@@ -276,6 +286,10 @@ def repl(
     ),
 ) -> None:
     """REPL interactivo — loop de conversación persistente con historial entre turnos."""
+    if resume and restore:
+        console.print("[red]Error:[/red] --resume y --restore son mutuamente excluyentes")
+        raise typer.Exit(1)
+
     try:
         config = load_config(base_url_override=base_url, model_override=model)
     except Exception as e:
@@ -299,11 +313,15 @@ def repl(
             )
         )
 
+    # --resume: usar el session_id dado como session_name
+    effective_session = session or resume
+
     project_root = Path(project).resolve() if project else Path.cwd()
     exit_code = asyncio.run(
         _repl_async(
             config, project_root,
-            session_name=session,
+            session_name=effective_session,
+            restore_checkpoint=restore,
             persist=not no_persist,
             streaming=not no_stream,
             yolo=yolo,
@@ -316,19 +334,36 @@ async def _repl_async(
     config: KlausConfig,
     project_root: Path,
     session_name: str | None = None,
+    restore_checkpoint: str | None = None,
     persist: bool = True,
     streaming: bool = True,
     yolo: bool = False,
 ) -> int:
     from .repl import run_repl
+    from .sessions import load_checkpoint
 
     adapter = _get_adapter(config)
     try:
+        # --restore: pre-carga el historial desde un checkpoint
+        initial_messages = None
+        if restore_checkpoint:
+            initial_messages = load_checkpoint(config.session.storage_path, restore_checkpoint)
+            if initial_messages is None:
+                console.print(
+                    f"[red]Checkpoint no encontrado:[/red] [cyan]{restore_checkpoint}[/cyan]"
+                )
+                return 1
+            console.print(
+                f"[green]💾 Checkpoint restaurado:[/green] [cyan]{restore_checkpoint}[/cyan] "
+                f"[dim]({len(initial_messages)} mensajes)[/dim]"
+            )
+
         return await run_repl(
             adapter=adapter,
             config=config,
             project_root=project_root,
             session_name=session_name,
+            initial_messages=initial_messages,
             persist=persist,
             streaming=streaming,
             yolo=yolo,

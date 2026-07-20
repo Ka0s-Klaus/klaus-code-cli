@@ -46,6 +46,16 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+web = [
+    "html2text>=2024.2",
+]
+multimodal = [
+    "Pillow>=10",
+]
+all = [
+    "html2text>=2024.2",
+    "Pillow>=10",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -56,27 +56,52 @@ class KlausIgnore:
 
 
 def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str, Any]:
-    """Carga CLAUS.md/CLAUDE.md si existe y devuelve el contexto del proyecto."""
+    """Carga CLAUS.md/CLAUDE.md si existe y devuelve el contexto del proyecto.
+
+    También inyecta el índice de memorias de ~/.Klaus/memory/MEMORY.md si existe.
+    """
     result: dict[str, Any] = {"root": str(project_root)}
 
     base_context = f"Working directory: {project_root}\n\n"
 
     # CLAUS.md (formato Klaus) tiene prioridad; CLAUDE.md y .CLAUDE.md como fallback
+    project_text = ""
     for name in ("KLAUS.md", "CLAUDE.md", ".CLAUDE.md"):
         candidate = project_root / name
         if candidate.exists():
             text = candidate.read_text(encoding="utf-8", errors="replace")
-            # Truncar al límite de tokens estimado (aprox. 4 chars/token)
             char_limit = max_tokens * 4
             if len(text) > char_limit:
                 text = text[:char_limit] + "\n\n[TRUNCADO]"
-            result["system_prompt"] = base_context + text
+            project_text = text
             result["system_prompt_source"] = name
             break
-    else:
-        result["system_prompt"] = base_context.rstrip()
 
+    # Inyectar memorias persistentes si existen
+    memory_section = _load_memory_index()
+
+    parts = [base_context]
+    if project_text:
+        parts.append(project_text)
+    if memory_section:
+        parts.append(f"\n\n---\n## 🧠 Memorias activas\n\n{memory_section}")
+
+    result["system_prompt"] = "".join(parts).rstrip()
     return result
+
+
+def _load_memory_index() -> str:
+    """Carga el índice MEMORY.md de ~/.Klaus/memory/ si existe."""
+    index_path = Path.home() / ".Klaus" / "memory" / "MEMORY.md"
+    if not index_path.exists():
+        return ""
+    try:
+        content = index_path.read_text(encoding="utf-8")
+        # Limitar a primeras 200 líneas (igual que K* global)
+        lines = content.splitlines()[:200]
+        return "\n".join(lines)
+    except OSError:
+        return ""
 
 
 # ---------------------------------------------------------------------------

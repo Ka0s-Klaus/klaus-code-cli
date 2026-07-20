@@ -12,7 +12,12 @@ from typing import Any
 from .bash import run_bash
 from .files import list_directory, read_file
 from .git import git_commit, git_diff, git_status
+from .image import read_image
+from .memory import memory_read, memory_write
 from .search import glob_search, grep_search
+from .subagent import spawn_agent
+from .todo import todo_read, todo_write
+from .web import web_fetch, web_search
 from .write import delete_file, edit_file, write_file
 
 # JSON Schemas en formato Anthropic tool_use
@@ -269,6 +274,197 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": ["message"],
         },
     },
+    # ── Fase 2: Web tools ─────────────────────────────────────────────────────
+    {
+        "name": "web_fetch",
+        "description": (
+            "Descarga una URL y devuelve el contenido como texto o markdown. "
+            "Convierte HTML a markdown legible automáticamente."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "URL a descargar (http/https)",
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Timeout en segundos (default: 30)",
+                },
+            },
+            "required": ["url"],
+        },
+    },
+    {
+        "name": "web_search",
+        "description": (
+            "Busca en la web usando DuckDuckGo. No requiere API key. "
+            "Devuelve lista de resultados con título, URL y snippet."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Consulta de búsqueda",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "Número máximo de resultados (default: 10)",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    # ── Fase 3: Todo tools ────────────────────────────────────────────────────
+    {
+        "name": "todo_write",
+        "description": (
+            "Sobreescribe la lista de tareas de la sesión actual. "
+            "Cada todo tiene 'content' (descripción) y 'status' (pending/in_progress/completed). "
+            "Mostrar siempre la lista actualizada al usuario."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "todos": {
+                    "type": "array",
+                    "description": "Lista completa de tareas",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "content": {"type": "string", "description": "Descripción de la tarea"},
+                            "status": {
+                                "type": "string",
+                                "enum": ["pending", "in_progress", "completed"],
+                                "description": "Estado de la tarea",
+                            },
+                        },
+                        "required": ["content", "status"],
+                    },
+                },
+            },
+            "required": ["todos"],
+        },
+    },
+    {
+        "name": "todo_read",
+        "description": "Lee la lista de tareas actual de la sesión.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    # ── Fase 5: Sub-agents ────────────────────────────────────────────────────
+    {
+        "name": "spawn_agent",
+        "description": (
+            "Lanza un sub-agente aislado para ejecutar una subtarea de forma autónoma. "
+            "El sub-agente tiene su propio historial y devuelve el resultado al padre. "
+            "Útil para paralelizar trabajo o delegar tareas complejas."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "Tarea o prompt para el sub-agente",
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Override de modelo para el sub-agente (opcional)",
+                },
+                "max_turns": {
+                    "type": "integer",
+                    "description": "Override de max_agent_turns (opcional)",
+                },
+                "tools": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Lista de nombres de tools disponibles (None = todas)",
+                },
+            },
+            "required": ["prompt"],
+        },
+    },
+    # ── Fase 6: Multimodal ────────────────────────────────────────────────────
+    {
+        "name": "read_image",
+        "description": (
+            "Lee una imagen desde disco y la codifica en base64 para incluirla en el contexto. "
+            "Formatos soportados: PNG, JPEG, GIF, WEBP. "
+            "Si la imagen es demasiado grande, la redimensiona automáticamente (requiere Pillow)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Ruta a la imagen (absoluta o relativa al cwd)",
+                },
+                "max_size_kb": {
+                    "type": "integer",
+                    "description": "Tamaño máximo en KB antes de redimensionar (default: 2048)",
+                },
+            },
+            "required": ["path"],
+        },
+    },
+    # ── Fase 8: Memory tools ──────────────────────────────────────────────────
+    {
+        "name": "memory_write",
+        "description": (
+            "Crea o actualiza una memoria persistente en ~/.Klaus/memory/. "
+            "Las memorias se inyectan en el system prompt de sesiones futuras."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Slug único de la memoria (kebab-case, e.g. 'user-preferences')",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Cuerpo de la memoria en markdown",
+                },
+                "memory_type": {
+                    "type": "string",
+                    "enum": ["user", "feedback", "project", "reference"],
+                    "description": "Tipo de memoria (default: project)",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Descripción de una línea para el índice MEMORY.md",
+                },
+            },
+            "required": ["name", "content"],
+        },
+    },
+    {
+        "name": "memory_read",
+        "description": (
+            "Lee memorias persistentes de ~/.Klaus/memory/. "
+            "Filtra por query (búsqueda en nombre/contenido) y/o tipo."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Texto a buscar en las memorias (vacío = todas)",
+                },
+                "memory_type": {
+                    "type": "string",
+                    "enum": ["user", "feedback", "project", "reference"],
+                    "description": "Filtrar por tipo de memoria (opcional)",
+                },
+            },
+            "required": [],
+        },
+    },
 ]
 
 # Mapping nombre → handler async callable
@@ -284,6 +480,19 @@ TOOL_HANDLERS: dict[str, Callable[..., Any]] = {
     "git_status": git_status,
     "git_diff": git_diff,
     "git_commit": git_commit,
+    # Fase 2: Web tools
+    "web_fetch": web_fetch,
+    "web_search": web_search,
+    # Fase 3: Todo tools
+    "todo_write": todo_write,
+    "todo_read": todo_read,
+    # Fase 5: Sub-agents
+    "spawn_agent": spawn_agent,
+    # Fase 6: Multimodal
+    "read_image": read_image,
+    # Fase 8: Memory
+    "memory_write": memory_write,
+    "memory_read": memory_read,
 }
 
 
