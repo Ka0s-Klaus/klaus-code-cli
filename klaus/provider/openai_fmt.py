@@ -25,6 +25,21 @@ def _is_retryable(exc: BaseException) -> bool:
     return isinstance(exc, httpx.NetworkError)
 
 
+def _to_openai_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convierte schemas de tools de formato Anthropic a formato OpenAI function calling."""
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": t["name"],
+                "description": t.get("description", ""),
+                "parameters": t.get("input_schema", {"type": "object", "properties": {}}),
+            },
+        }
+        for t in tools
+    ]
+
+
 def _to_openai_messages(
     messages: list[dict[str, Any]],
     system: str | None,
@@ -35,14 +50,45 @@ def _to_openai_messages(
     for m in messages:
         role = m["role"]
         content = m["content"]
-        if isinstance(content, list):
-            text = " ".join(
-                b.get("text", "") for b in content
-                if isinstance(b, dict) and b.get("type") == "text"
-            )
-            out.append({"role": role, "content": text})
-        else:
+        if not isinstance(content, list):
             out.append({"role": role, "content": content})
+            continue
+
+        tool_results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"]
+        tool_uses = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_use"]
+        texts = [b for b in content if isinstance(b, dict) and b.get("type") == "text"]
+
+        if tool_results:
+            # user message con resultados de tools → un mensaje "tool" por resultado
+            for tr in tool_results:
+                out.append({
+                    "role": "tool",
+                    "tool_call_id": tr.get("tool_use_id", ""),
+                    "content": tr.get("content", ""),
+                })
+        elif tool_uses:
+            # assistant message con tool calls
+            msg: dict[str, Any] = {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": _json.dumps(tc.get("input", {}), ensure_ascii=False),
+                        },
+                    }
+                    for tc in tool_uses
+                ],
+            }
+            text = " ".join(b.get("text", "") for b in texts)
+            if text:
+                msg["content"] = text
+            out.append(msg)
+        else:
+            text = " ".join(b.get("text", "") for b in texts)
+            out.append({"role": role, "content": text})
     return out
 
 
@@ -118,6 +164,9 @@ class OpenAIAdapter(ProviderAdapter):
             "max_tokens": self._config.provider.max_tokens,
             "messages": _to_openai_messages(messages, system),
         }
+        if tools:
+            payload["tools"] = _to_openai_tools(tools)
+            payload["tool_choice"] = "auto"
         resp = await self._client.post("/chat/completions", json=payload)
         resp.raise_for_status()
         return _from_openai_response(resp.json())
@@ -137,6 +186,9 @@ class OpenAIAdapter(ProviderAdapter):
             "stream": True,
             "stream_options": {"include_usage": True},
         }
+        if tools:
+            payload["tools"] = _to_openai_tools(tools)
+            payload["tool_choice"] = "auto"
 
         full_text = ""
         tool_calls_raw: dict[int, dict[str, str]] = {}
