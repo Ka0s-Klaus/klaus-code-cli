@@ -252,6 +252,23 @@ async def _dispatch_tool(
 
     _print_tool_call(name, args)
 
+    # Validar parámetros requeridos antes de invocar el handler.
+    # Devuelve un error accionable al modelo en lugar de una excepción Python
+    # críptica que provoca bucles de reintentos hasta max_agent_turns.
+    _schema = next((s for s in TOOL_SCHEMAS if s["name"] == name), None)
+    if _schema:
+        _required = _schema.get("input_schema", {}).get("required", [])
+        _missing = [p for p in _required if p not in args]
+        if _missing:
+            _params = ", ".join(f"'{p}'" for p in _missing)
+            _example = ", ".join(f'{p}="<valor>"' for p in _required)
+            return {
+                "error": (
+                    f"Parámetros requeridos faltantes en '{name}': {_params}. "
+                    f"Llama la herramienta con: {name}({_example})"
+                )
+            }
+
     # ── PreToolUse hook ──────────────────────────────────────────────────────
     runner = hook_runner or HookRunner(project_root=cwd)
     allowed = await runner.run_pre_tool(name, args, session_id=session_id)
