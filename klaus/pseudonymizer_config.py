@@ -67,23 +67,27 @@ async def configure_pseudonymizer(
         return
 
     # Enviar configuración al proxy (crear cliente temporal)
-    async with httpx.AsyncClient() as client:
-        try:
+    log.debug("PSEUDONYMIZER_CONFIG: connecting to %s", config_endpoint)
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             payload: dict[str, Any] = {"literals": literals}
+            log.debug("PSEUDONYMIZER_CONFIG: sending POST with %d literals", len(literals))
             resp = await client.post(
                 config_endpoint,
                 json=payload,
-                timeout=5.0,
             )
             resp.raise_for_status()
             result = resp.json()
             log.info(
-                "PSEUDONYMIZER_CONFIG: configured literals=%d paths=%d endpoint=%s",
+                "PSEUDONYMIZER_CONFIG: ✅ configured literals=%d paths=%d",
                 result.get("literals", 0),
                 result.get("paths", 0),
-                config_endpoint,
             )
-        except httpx.HTTPError as e:
-            log.warning("PSEUDONYMIZER_CONFIG: failed to configure %s: %s", config_endpoint, e)
-        except Exception as e:
-            log.warning("PSEUDONYMIZER_CONFIG: unexpected error: %s", e)
+    except httpx.ConnectError as e:
+        log.warning("PSEUDONYMIZER_CONFIG: ⚠️  connection failed to %s (proxy not running?): %s", config_endpoint, e)
+    except httpx.TimeoutException as e:
+        log.warning("PSEUDONYMIZER_CONFIG: ⚠️  timeout connecting to %s: %s", config_endpoint, e)
+    except httpx.HTTPError as e:
+        log.warning("PSEUDONYMIZER_CONFIG: ⚠️  HTTP error from %s: %s", config_endpoint, e)
+    except Exception as e:
+        log.warning("PSEUDONYMIZER_CONFIG: ⚠️  unexpected error: %s", e)

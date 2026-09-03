@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -71,10 +72,12 @@ async def run_agent_loop(
             active_schemas.extend(mcp.schemas)
             active_handlers.update(mcp.handlers)
 
-        # --- Configurar pseudonymizer en el proxy ---
-        await configure_pseudonymizer(
-            base_url=config.provider.base_url,
-            project_root=cwd,
+        # --- Configurar pseudonymizer en el proxy (no-blocking, fire-and-forget) ---
+        asyncio.create_task(
+            configure_pseudonymizer(
+                base_url=config.provider.base_url,
+                project_root=cwd,
+            )
         )
 
         return await _agent_loop(
