@@ -73,9 +73,11 @@ async def run_agent_loop(
             active_handlers.update(mcp.handlers)
 
         # --- Configurar pseudonymizer en el proxy (no-blocking, fire-and-forget) ---
+        # Solo configurar si el modelo es externo, no local
         asyncio.create_task(
             configure_pseudonymizer(
                 base_url=config.provider.base_url,
+                model=config.provider.model,
                 project_root=cwd,
             )
         )

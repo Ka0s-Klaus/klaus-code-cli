@@ -18,17 +18,26 @@ log = logging.getLogger("klaus.pseudonymizer_config")
 
 async def configure_pseudonymizer(
     base_url: str,
+    model: str | None = None,
     project_root: Path | None = None,
 ) -> None:
     """Detectar valores sensibles y registrarlos en el pseudonymizer del proxy.
 
     Argumentos:
       base_url: URL del proxy (e.g., "http://localhost:8080/v1")
+      model: Modelo a usar (e.g., "kdev:latest", "claude-3-5-sonnet")
       project_root: Raíz del proyecto actual
     """
     if not base_url:
         log.debug("PSEUDONYMIZER_CONFIG: base_url vacío, skip")
         return
+
+    # Skip si modelo es local (Ollama, archivo local, etc.)
+    if model:
+        is_local = any(marker in model.lower() for marker in ["kdev", "ollama", "localhost", "/"])
+        if is_local:
+            log.debug("PSEUDONYMIZER_CONFIG: modelo local '%s', skipping configuration", model)
+            return
 
     # Calcular URL del pseudonymizer (remover /v1 si está)
     proxy_url = base_url.rsplit("/v1", 1)[0] if base_url.endswith("/v1") else base_url
