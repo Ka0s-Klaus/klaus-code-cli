@@ -18,6 +18,7 @@ from .config import KlausConfig
 from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
+from .pseudonymizer_config import configure_pseudonymizer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
 
 console = Console()
@@ -69,6 +70,12 @@ async def run_agent_loop(
             await mcp.startup(config.mcp_servers)
             active_schemas.extend(mcp.schemas)
             active_handlers.update(mcp.handlers)
+
+        # --- Configurar pseudonymizer en el proxy ---
+        await configure_pseudonymizer(
+            base_url=config.provider.base_url,
+            project_root=cwd,
+        )
 
         return await _agent_loop(
             prompt=prompt,
