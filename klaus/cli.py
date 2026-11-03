@@ -76,10 +76,17 @@ def run(
         False, "--yolo",
         help="Modo sin confirmaciones: equivale a --allow-writes --allow-bash",
     ),
+    mcp_config: list[str] | None = typer.Option(
+        None, "--mcp-config",
+        help="Fichero JSON/YAML con servidores MCP adicionales (repetible). "
+             "Acepta mcp_servers o el formato mcpServers de otros clientes MCP.",
+    ),
 ) -> None:
     """Ejecuta el agente con tool calling."""
     try:
-        config = load_config(base_url_override=base_url, model_override=model)
+        config = load_config(
+            base_url_override=base_url, model_override=model, mcp_config_files=mcp_config
+        )
     except Exception as e:
         console.print(f"[red]Error de configuración:[/red] {e}")
         raise typer.Exit(4)
@@ -283,6 +290,11 @@ def repl(
         False, "--yolo",
         help="Modo sin confirmaciones: equivale a --allow-writes --allow-bash",
     ),
+    mcp_config: list[str] | None = typer.Option(
+        None, "--mcp-config",
+        help="Fichero JSON/YAML con servidores MCP adicionales (repetible). "
+             "Acepta mcp_servers o el formato mcpServers de otros clientes MCP.",
+    ),
 ) -> None:
     """REPL interactivo — loop de conversación persistente con historial entre turnos."""
     if resume and restore:
@@ -290,7 +302,9 @@ def repl(
         raise typer.Exit(1)
 
     try:
-        config = load_config(base_url_override=base_url, model_override=model)
+        config = load_config(
+            base_url_override=base_url, model_override=model, mcp_config_files=mcp_config
+        )
     except Exception as e:
         console.print(f"[red]Error de configuración:[/red] {e}")
         raise typer.Exit(4)

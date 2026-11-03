@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import os
+from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import AliasChoices, BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, Field, ValidationError, model_validator
 
 from .compat import getenv, klaus_home, warn_once
 
@@ -127,9 +129,78 @@ class KlausConfig(BaseModel):
         return val or None
 
 
+class MCPConfigError(ValueError):
+    """Fichero de --mcp-config inexistente o con formato inválido."""
+
+
+def load_mcp_config_file(path: str | Path) -> list[MCPServerConfig]:
+    """Lee servidores MCP de un fichero JSON o YAML (#70).
+
+    Formatos aceptados:
+      - lista de servidores con el formato de ``mcp_servers``;
+      - ``{"mcp_servers": [...]}``;
+      - ``{"mcpServers": {"<nombre>": {"command": "...", "args": [...], "env": {...}}}}``,
+        el formato habitual de otros clientes MCP.
+
+    Los servidores remotos (``url`` sin ``command``) no se admiten: se omiten con aviso.
+    """
+    p = Path(path).expanduser()
+    if not p.is_file():
+        raise MCPConfigError(f"--mcp-config: no existe el fichero '{p}'")
+    text = p.read_text(encoding="utf-8")
+    try:
+        data = json.loads(text) if p.suffix.lower() == ".json" else yaml.safe_load(text)
+    except (json.JSONDecodeError, yaml.YAMLError) as e:
+        raise MCPConfigError(f"--mcp-config: '{p}' no es JSON/YAML válido: {e}") from e
+
+    entries: list[dict[str, Any]]
+    if isinstance(data, list):
+        entries = data
+    elif isinstance(data, dict) and isinstance(data.get("mcp_servers"), list):
+        entries = data["mcp_servers"]
+    elif isinstance(data, dict) and isinstance(data.get("mcpServers"), dict):
+        entries = []
+        for name, spec in data["mcpServers"].items():
+            if not isinstance(spec, dict):
+                raise MCPConfigError(f"--mcp-config: servidor '{name}' mal formado en '{p}'")
+            if "command" not in spec:
+                warn_once(
+                    f"mcp-remote:{p}:{name}",
+                    f"--mcp-config: servidor '{name}' omitido (solo se admiten servidores stdio "
+                    "con 'command').",
+                )
+                continue
+            command = spec["command"]
+            cmd = list(command) if isinstance(command, list) else [str(command)]
+            cmd += [str(a) for a in spec.get("args", [])]
+            entry = {k: v for k, v in spec.items() if k not in ("command", "args", "type")}
+            entries.append({"name": name, "command": cmd, **entry})
+    else:
+        raise MCPConfigError(
+            f"--mcp-config: formato no reconocido en '{p}'. Usa una lista de servidores, "
+            "'mcp_servers: [...]' o 'mcpServers: {...}'."
+        )
+
+    try:
+        return [MCPServerConfig.model_validate(e) for e in entries]
+    except ValidationError as e:
+        raise MCPConfigError(f"--mcp-config: servidor inválido en '{p}': {e}") from e
+
+
+def merge_mcp_servers(
+    base: list[MCPServerConfig], extra: list[MCPServerConfig]
+) -> list[MCPServerConfig]:
+    """Une servidores; a igualdad de nombre gana ``extra`` (la CLI sobre config.yaml)."""
+    merged = {s.name: s for s in base}
+    for s in extra:
+        merged[s.name] = s
+    return list(merged.values())
+
+
 def load_config(
     base_url_override: str | None = None,
     model_override: str | None = None,
+    mcp_config_files: list[str] | None = None,
 ) -> KlausConfig:
     """Carga ~/.klaus/config.yaml y aplica variables de entorno y overrides de CLI.
 
@@ -155,7 +226,10 @@ def load_config(
     if model_override:
         raw.setdefault("provider", {})["model"] = model_override
 
-    return KlausConfig(**raw)
+    config = KlausConfig(**raw)
+    for path in mcp_config_files or []:
+        config.mcp_servers = merge_mcp_servers(config.mcp_servers, load_mcp_config_file(path))
+    return config
 
 
 DEFAULT_CONFIG_YAML = """provider:

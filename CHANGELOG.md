@@ -26,6 +26,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Variables de entorno del proxy (`KLAUS_PROXY_URL`, `KLAUS_MODEL`, `KLAUS_API_FORMAT`) ([#37](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/37), renombradas en [#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - REPL: `/tokens`, indicador de modo YOLO ([#32](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/32))
 - Secciones de config `pseudonymizer` y `security`
+- `--mcp-config` en `klaus run` y `klaus repl` (repetible): servidores MCP desde JSON/YAML, con los formatos `mcp_servers` y `mcpServers`. Documentado desde 0.13.0, pero nunca implementado hasta ahora ([#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70))
 - `klaus/compat.py`: avisos de obsolescencia para nombres anteriores ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`
@@ -54,7 +55,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - CI en verde: imports `klaus`, ruff y mypy ([#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54))
 - `OpenAIAdapter` enviaba las tools sin convertir al formato OpenAI (Ollama/Qwen3) ([#48](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/48))
 - Parámetros requeridos validados antes de invocar el handler (bucle `read_file({})`) ([#50](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/50))
-- Documentación: `klaus run --no-stream` y `--mcp-config` no existen (eliminados de las guías); `docs/mcp.md` decía que MCP pide confirmación ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58), [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- Documentación: `klaus run --no-stream` no existe (eliminado de las guías); `docs/mcp.md` decía que MCP pide confirmación ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58), [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
 
 ---
 
