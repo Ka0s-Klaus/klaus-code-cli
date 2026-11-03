@@ -104,6 +104,7 @@ behavior:
   auto_approve_writes: false  # Las escrituras piden confirmación (true = --allow-writes)
   auto_approve_bash: false    # Los comandos bash piden confirmación (true = --allow-bash)
   max_agent_turns: 25         # Máximo de llamadas al LLM por sesión de agente
+  max_agent_depth: 3          # Profundidad máxima de sub-agentes anidados (spawn_agent)
   plan_mode: false            # Activar plan mode por defecto (--plan en CLI)
   streaming: true             # Streaming de respuestas por defecto
 ```
@@ -151,12 +152,16 @@ context:
 
 ```mermaid
 flowchart LR
-    MSG["Mensajes acumulados"] --> EST["Estimar tokens"]
-    EST --> CHK{"> 80% del límite?"}
+    RESP["Respuesta del modelo"] --> CTX["Contexto actual =\ninput_tokens de esa respuesta"]
+    CTX --> CHK{"≥ 80% de\nmax_context_tokens?"}
     CHK -->|"No"| CONT["Continuar normalmente"]
-    CHK -->|"Sí"| COMPACT["Compactar: eliminar\nmensajes intermedios\nconservando el primero\ny los últimos N"]
+    CHK -->|"Sí"| COMPACT["Compactar: conservar el primero\n+ marcador + los últimos 6,\nsin tool_result huérfanos"]
     COMPACT --> CONT
 ```
+
+- **Contexto actual ≠ consumo.** Cada petición reenvía el historial completo, así que el `input_tokens` de la última respuesta *es* el tamaño del contexto. La línea de estado muestra ambos: `📊 contexto: 42,000 (42%) | consumo — input: 180,000 · output: 3,200`. El consumo acumulado es lo que se factura; no se usa para decidir la compactación.
+- Se comprueba tras cada respuesta del modelo, también en turnos sin tools del REPL.
+- Si la ventana recortada empezaría por un `tool_result` cuyo `tool_use` se ha eliminado, ese mensaje se descarta también: la API rechaza resultados huérfanos.
 
 ---
 

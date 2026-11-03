@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Fix: corrección del bucle del agente
+
+### Fixed
+- `klaus/agent.py` · `_dispatch_tool`: el handler se invoca **una sola vez**. Antes, un `TypeError` lanzado *dentro* de una tool provocaba un segundo intento sin `cwd`: efectos duplicados (escrituras, bash) y en otro directorio. Ahora `cwd` solo se pasa si la firma lo acepta (`inspect.signature`, siguiendo decoradores)
+- `_dispatch_tool`: los parámetros requeridos se validan contra los **schemas activos** (built-in + MCP), no solo los built-in. Parámetro `schemas=` en run, repl y `spawn_agent`
+- `_dispatch_tool`: los parámetros que el handler no acepta devuelven un error accionable con la lista de parámetros válidos, en vez de un `TypeError` críptico
+- **Conteo de contexto**: el % y la auto-compactación usan el `input_tokens` de la última respuesta (el tamaño real del contexto). Antes se sumaban todos los turnos: el % pasaba del 100 % y se compactaba antes de tiempo. La línea de estado separa `contexto` y `consumo`
+- `klaus/repl.py`: compactar ya no pone a 0 el consumo del turno (falseaba `/tokens`), y la compactación también se evalúa en turnos sin tools
+- `klaus/context.py` · `compact_messages`: no deja `tool_result` huérfanos al inicio de la ventana (la API respondía 400)
+- `DEFAULT_CONFIG_YAML` (`klaus init`): `timeout_seconds` 120 → 600 (como el modelo) y añadido `max_agent_depth`
+
+### Added
+- `tests/test_agent_loop.py`: 14 tests, incluido uno que compara el YAML por defecto con el modelo Pydantic completo
+- `docs/configuration.md` (auto-compact, `max_agent_depth`), `docs/architecture.md` (`_dispatch_tool`), `docs/usage.md` (`/tokens` = consumo)
+
+**Issue:** [#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57)
+
+---
+
 ## [Unreleased] — Security: workspace, run_bash, hooks y sub-agentes
 
 ### Security

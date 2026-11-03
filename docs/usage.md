@@ -104,7 +104,7 @@ Klaus repl [OPCIONES]
 | `/clear` | Limpia el historial de la sesión actual (borra mensajes) |
 | `/history` | Muestra los mensajes del historial con roles |
 | `/sessions` | Lista sesiones guardadas en disco |
-| `/tokens` | Muestra tokens de input / output / total acumulados en la sesión |
+| `/tokens` | Muestra el **consumo** acumulado de la sesión (input / output / total). El tamaño del contexto actual aparece en la línea `📊 contexto` de cada turno |
 | `/exit` | Sale del REPL |
 | `/quit` | Sale del REPL (alias) |
 
