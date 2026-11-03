@@ -18,7 +18,7 @@ from .config import CONFIG_PATH, DEFAULT_CONFIG_YAML, KlausConfig, load_config
 from .provider.base import ProviderAdapter
 
 app = typer.Typer(
-    name="Klaus",
+    name="klaus",
     help="Klaus Code CLI — agente de codificación agnóstico de proveedor",
     no_args_is_help=True,
 )
@@ -136,15 +136,14 @@ async def _run_async(prompt: str, config: KlausConfig, project_root: Path) -> in
 
 @app.command()
 def init(
-    scan: bool = typer.Option(False, "--scan", help="Explora el proyecto y genera CLAUS.md"),
+    scan: bool = typer.Option(False, "--scan", help="Explora el proyecto y genera KLAUS.md"),
 ) -> None:
-    """Crea ~/.Klaus/config.yaml con valores por defecto. Con --scan, genera CLAUS.md."""
-    config_dir = Path.home() / ".Klaus"
-    config_dir.mkdir(parents=True, exist_ok=True)
+    """Crea ~/.klaus/config.yaml con valores por defecto. Con --scan, genera KLAUS.md."""
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     if CONFIG_PATH.exists():
         console.print(f"[yellow]⚠️[/yellow]  {CONFIG_PATH} ya existe — no se sobreescribe")
-        console.print("[dim]Usa `Klaus config show` para ver la configuración activa[/dim]")
+        console.print("[dim]Usa `klaus config show` para ver la configuración activa[/dim]")
     else:
         CONFIG_PATH.write_text(DEFAULT_CONFIG_YAML, encoding="utf-8")
         console.print(f"[green]✅[/green]  Configuración creada en [bold]{CONFIG_PATH}[/bold]")
@@ -161,7 +160,7 @@ def init(
 
 
 async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
-    """Escanea el proyecto y genera CLAUS.md mediante una llamada one-shot al LLM."""
+    """Escanea el proyecto y genera KLAUS.md mediante una llamada one-shot al LLM."""
     from .context import KlausIgnore
 
     console.print("[cyan]🔍  Analizando estructura del proyecto...[/cyan]")
@@ -206,7 +205,7 @@ async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
 
     prompt = (
         "Eres un asistente de codificación experto. Analiza el siguiente proyecto y genera "
-        "un fichero CLAUS.md conciso y útil que sirva como system prompt para un agente de codificación.\n\n"
+        "un fichero KLAUS.md conciso y útil que sirva como system prompt para un agente de codificación.\n\n"
         "El fichero debe:\n"
         "- Estar en castellano\n"
         "- Usar Markdown con emojis en los títulos\n"
@@ -216,11 +215,11 @@ async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
         "- Ser directo y útil para un agente IA que trabaja con el código\n\n"
         f"## Estructura del proyecto\n\n```\n{tree_str}\n```\n\n"
         f"## Ficheros clave\n\n{key_content_str}\n\n"
-        "Genera solo el contenido del fichero CLAUS.md, sin explicaciones adicionales."
+        "Genera solo el contenido del fichero KLAUS.md, sin explicaciones adicionales."
     )
 
     adapter = _get_adapter(config)
-    console.print("[cyan]🤖  Generando CLAUS.md con el LLM...[/cyan]")
+    console.print("[cyan]🤖  Generando KLAUS.md con el LLM...[/cyan]")
     try:
         response = await adapter.send_message(
             messages=[{"role": "user", "content": prompt}]
@@ -233,12 +232,12 @@ async def _scan_and_generate(project_root: Path, config: KlausConfig) -> None:
         await adapter.close()
 
     if not klausmd_content.strip():
-        console.print("[red]El LLM devolvió respuesta vacía — CLAUS.md no generado[/red]")
+        console.print("[red]El LLM devolvió respuesta vacía — KLAUS.md no generado[/red]")
         return
 
-    target = project_root / "CLAUS.md"
+    target = project_root / "KLAUS.md"
     target.write_text(klausmd_content, encoding="utf-8")
-    console.print(f"[green]✅  CLAUS.md generado en[/green] [bold]{target}[/bold]")
+    console.print(f"[green]✅  KLAUS.md generado en[/green] [bold]{target}[/bold]")
     console.print("[dim]Revisa y edita el fichero antes de usarlo como contexto[/dim]")
 
 
@@ -256,7 +255,7 @@ def repl(
     resume: str | None = typer.Option(
         None, "--resume",
         help="Reanuda una sesión existente por su ID (e.g. --resume abc123def456). "
-             "El ID puede obtenerse con `Klaus sessions list`.",
+             "El ID puede obtenerse con `klaus sessions list`.",
     ),
     restore: str | None = typer.Option(
         None, "--restore",
@@ -546,4 +545,7 @@ def sessions_clear(
 
 
 def main() -> None:
+    from .compat import warn_legacy_dirs
+
+    warn_legacy_dirs(Path.cwd())  # avisa si quedan ~/.Klaus o .Klaus (#58)
     app()

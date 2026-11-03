@@ -1,6 +1,6 @@
 # 📚 Guía de Estilo de Documentación
 
-Este documento define el estándar de formato para toda la documentación del proyecto **Klaus-code-cli** a partir de septiembre 2026.
+Este documento define el estándar de formato para toda la documentación del proyecto **Klaus Code CLI** a partir de septiembre 2026.
 
 ## 🎯 Estructura de README.md
 

@@ -59,8 +59,8 @@ ruff check . && mypy . && pytest tests/ -q
 | Imports solo para tipos → bloque `if TYPE_CHECKING:` | Evita imports circulares sin dejar nombres indefinidos (`F821`) |
 | Los adaptadores de `provider/` respetan **la firma completa** de `ProviderAdapter` | Los llamadores pasan los mismos kwargs a todos (p. ej. `on_thinking`); una firma distinta revienta en runtime |
 | Dependencias externas con API cambiante (p. ej. `mcp`) → acceso compatible entre versiones + test | `pyproject` admite `mcp>=1.0`, pero hoy se instala la 2.x |
-| Tests aislados del entorno del desarrollador | `tests/conftest.py` limpia las variables `KLAUDE_*` y desactiva confirmaciones |
-| Variables de entorno de configuración: `KLAUDE_PROXY_URL`, `KLAUDE_MODEL`, `KLAUDE_API_FORMAT`, `KLAUDE_API_KEY` | Contrato actual de `klaus/config.py` (la unificación de nombres se trata en #58) |
+| Tests aislados del entorno del desarrollador | `tests/conftest.py` limpia las variables `KLAUS_*`/`KLAUDE_*`, el estado de seguridad y desactiva confirmaciones |
+| Nombres: ver [convención en CONTRIBUTING](../CONTRIBUTING.md#-convención-de-nombres). Variables `KLAUS_*` (alias obsoletos `KLAUDE_*`) | `tests/conftest.py` limpia ambas familias para aislar los tests |
 
 ---
 
@@ -77,14 +77,18 @@ ruff check . && mypy . && pytest tests/ -q
 
 ---
 
-## 🤝 Flujo de contribución
+## 📦 Release
 
-Obligatorio para cualquier cambio (también para la documentación):
+La versión tiene **una sola fuente de verdad**: `[project].version` en `pyproject.toml`. `klaus.__version__` la lee de los metadatos del paquete instalado.
 
-1. **Issue** con contexto y criterios de aceptación
-2. **Rama** `<tipo>/<n-issue>-<descripcion>` (ej. `fix/54-restore-ci-green`)
-3. **Commits** que referencian `#<n-issue>`
-4. **Issue actualizada** con las decisiones tomadas
-5. **PR** hacia `main` con `Closes #<n-issue>`, **CI en verde** y aprobación humana antes del merge
+1. PR que sube `version` en `pyproject.toml` y mueve `[Unreleased]` del CHANGELOG a `[X.Y.Z] — fecha`
+2. Tras el merge: `git tag vX.Y.Z && git push origin vX.Y.Z`
+3. `.github/workflows/release.yml` **comprueba que el tag coincide** con la versión de `pyproject.toml` (si no, falla) y publica en PyPI por OIDC (trusted publishing, sin tokens)
 
-> 💡 Recomendación FDE (#58): activar branch protection en `main` exigiendo PR + los 5 checks de CI. Así el flujo queda garantizado por la plataforma y no depende de la disciplina de cada uno.
+> ℹ️ Las versiones `0.x` del CHANGELOG hasta `0.15.0` son **fases de desarrollo** y nunca se etiquetaron ni publicaron. La primera release real será la primera que se etiquete.
+
+---
+
+## 🤝 Contribuir
+
+El flujo obligatorio (issue → rama → PR con aprobación humana) y la convención de nombres están en [🤝 CONTRIBUTING.md](../CONTRIBUTING.md).

@@ -1,21 +1,22 @@
-"""Carga y validación de configuración desde ~/.Klaus/config.yaml."""
+"""Carga y validación de configuración desde ~/.klaus/config.yaml."""
 
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
-CONFIG_PATH = Path.home() / ".Klaus" / "config.yaml"
+from .compat import getenv, klaus_home, warn_once
+
+CONFIG_PATH = klaus_home() / "config.yaml"
 
 
 class ProviderConfig(BaseModel):
-    # URL base del proxy klaude. Sobreescribible con KLAUDE_PROXY_URL.
+    # URL base de klaude-proxy. Sobreescribible con KLAUS_PROXY_URL.
     base_url: str = "http://localhost:8080/v1"
-    api_key_env: str = "KLAUDE_API_KEY"
+    api_key_env: str = "KLAUS_API_KEY"
     api_format: str = "anthropic"  # "anthropic" | "openai"
     model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 4096
@@ -33,7 +34,7 @@ class BehaviorConfig(BaseModel):
 
 
 class SessionConfig(BaseModel):
-    storage_path: str = "~/.Klaus/sessions/"
+    storage_path: str = "~/.klaus/sessions/"
     persist: bool = True
     lock_enabled: bool = True
 
@@ -42,7 +43,22 @@ class ContextConfig(BaseModel):
     max_context_tokens: int = 100_000
     auto_compact: bool = True
     max_file_read_lines: int = 2000
-    max_Klaus_md_tokens: int = 4000
+    # Tokens máximos de KLAUS.md inyectados en el system prompt.
+    # Acepta la clave anterior `max_Klaus_md_tokens` (obsoleta, #58).
+    max_klaus_md_tokens: int = Field(
+        default=4000,
+        validation_alias=AliasChoices("max_klaus_md_tokens", "max_Klaus_md_tokens"),
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_legacy_keys(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "max_Klaus_md_tokens" in data:
+            warn_once(
+                "cfg:max_Klaus_md_tokens",
+                "context.max_Klaus_md_tokens está obsoleta; usa context.max_klaus_md_tokens.",
+            )
+        return data
 
 
 class NetworkConfig(BaseModel):
@@ -72,7 +88,7 @@ class SecurityConfig(BaseModel):
     allowed_paths: list[str] = Field(default_factory=list)
     # Acceso fuera del workspace: "ask" pregunta (también en YOLO; sin TTY se deniega), "deny" siempre deniega.
     outside_workspace: Literal["ask", "deny"] = "ask"
-    # Hooks en <proyecto>/.Klaus/hooks: "ask" pide confianza (por hash), "trust" siempre, "never" nunca.
+    # Hooks en <proyecto>/.klaus/hooks: "ask" pide confianza (por hash), "trust" siempre, "never" nunca.
     project_hooks: Literal["ask", "trust", "never"] = "ask"
     # Si no está vacía y run_bash está auto-aprobado, solo estos prefijos se ejecutan sin preguntar.
     bash_allowlist: list[str] = Field(default_factory=list)
@@ -99,6 +115,8 @@ class KlausConfig(BaseModel):
     @property
     def api_key(self) -> str | None:
         val = os.getenv(self.provider.api_key_env)
+        if not val and self.provider.api_key_env == "KLAUS_API_KEY":
+            val = getenv("API_KEY")  # acepta KLAUDE_API_KEY (obsoleta) con aviso
         return val or None
 
 
@@ -106,19 +124,22 @@ def load_config(
     base_url_override: str | None = None,
     model_override: str | None = None,
 ) -> KlausConfig:
-    """Load config from ~/.Klaus/config.yaml with env var and CLI overrides."""
+    """Carga ~/.klaus/config.yaml y aplica variables de entorno y overrides de CLI.
+
+    Prioridad: CLI > KLAUS_* (o KLAUDE_*, obsoletas) > config.yaml > defaults.
+    """
     raw: dict[str, Any] = {}
 
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH) as f:
             raw = yaml.safe_load(f) or {}
 
-    # Env var overrides — KLAUDE_PROXY_URL tiene precedencia sobre config.yaml
-    if val := os.getenv("KLAUDE_PROXY_URL"):
+    # Variables de entorno — tienen precedencia sobre config.yaml
+    if val := getenv("PROXY_URL"):
         raw.setdefault("provider", {})["base_url"] = val
-    if val := os.getenv("KLAUDE_MODEL"):
+    if val := getenv("MODEL"):
         raw.setdefault("provider", {})["model"] = val
-    if val := os.getenv("KLAUDE_API_FORMAT"):
+    if val := getenv("API_FORMAT"):
         raw.setdefault("provider", {})["api_format"] = val
 
     # CLI overrides (highest priority)
@@ -132,11 +153,11 @@ def load_config(
 
 DEFAULT_CONFIG_YAML = """provider:
   # URL base de klaude-proxy (incluye /v1).
-  # Sobreescribible sin tocar este fichero: export KLAUDE_PROXY_URL="http://<host>:8080/v1"
+  # Sobreescribible sin tocar este fichero: export KLAUS_PROXY_URL="http://<host>:8080/v1"
   base_url: "http://localhost:8080/v1"
   # Nombre de la variable de entorno que contiene la API key enviada al proxy.
-  # Sobreescribible: export KLAUDE_API_KEY="sk-ant-..."
-  api_key_env: "KLAUDE_API_KEY"
+  # Sobreescribible: export KLAUS_API_KEY="sk-ant-..."
+  api_key_env: "KLAUS_API_KEY"
   api_format: "anthropic"
   model: "claude-haiku-4-5-20251001"
   max_tokens: 4096
@@ -152,7 +173,7 @@ behavior:
   streaming: true
 
 session:
-  storage_path: "~/.Klaus/sessions/"
+  storage_path: "~/.klaus/sessions/"
   persist: true
   lock_enabled: true
 
@@ -160,7 +181,7 @@ context:
   max_context_tokens: 100000
   auto_compact: true
   max_file_read_lines: 2000
-  max_Klaus_md_tokens: 4000
+  max_klaus_md_tokens: 4000
 
 network:
   max_retries: 3
@@ -181,7 +202,7 @@ security:
   allowed_paths: []
   # Fuera del workspace: "ask" (pregunta incluso en --yolo; sin TTY deniega) | "deny".
   outside_workspace: "ask"
-  # Hooks de <proyecto>/.Klaus/hooks: "ask" (confianza por hash) | "trust" | "never".
+  # Hooks de <proyecto>/.klaus/hooks: "ask" (confianza por hash) | "trust" | "never".
   project_hooks: "ask"
   # Con run_bash auto-aprobado, solo estos prefijos corren sin preguntar (vacío = sin filtro).
   # Ej.: ["pytest", "ruff check", "git status", "git diff"]

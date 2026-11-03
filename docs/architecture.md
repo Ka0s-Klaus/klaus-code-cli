@@ -106,7 +106,7 @@ Typer app con tres sub-apps: `config_app`, `sessions_app` y el root `app`.
 Comandos expuestos:
 - `run` — ejecuta el agente una vez y sale
 - `repl` — abre el REPL interactivo
-- `init` — genera config inicial (con `--scan` genera CLAUS.md)
+- `init` — genera config inicial (con `--scan` genera KLAUS.md)
 - `config show` — muestra configuración activa
 - `sessions list/show/clear` — gestión de sesiones
 
@@ -128,7 +128,7 @@ Comandos expuestos:
 
 ### `config.py` — Configuración
 
-Pydantic BaseModels con validación estricta. `load_config()` lee `~/.Klaus/config.yaml`, hace merge con los valores por defecto y acepta overrides de CLI.
+Pydantic BaseModels con validación estricta. `load_config()` lee `~/.klaus/config.yaml`, hace merge con los valores por defecto y acepta overrides de CLI.
 
 ### `provider/` — Adapters de proveedor
 
@@ -151,7 +151,7 @@ async def close() -> None
 
 ### `sessions.py` — Persistencia
 
-`SessionManager` — CRUD de sesiones en `~/.Klaus/sessions/` (JSON).
+`SessionManager` — CRUD de sesiones en `~/.klaus/sessions/` (JSON).
 `SessionLock` — file lock para prevenir escrituras concurrentes si hay múltiples instancias.
 
 ### `streaming.py` — Rendering
@@ -160,7 +160,7 @@ async def close() -> None
 
 ### `context.py` — Gestión de contexto
 
-`load_project_context(project_root)` — carga CLAUS.md del proyecto y ancestors.
+`load_project_context(project_root)` — carga KLAUS.md del proyecto y ancestors.
 `maybe_compact(messages, context_tokens, max_context_tokens, ...)` — compacta si el contexto **actual** (`input_tokens` de la última respuesta) supera el 80 % del límite.
 `compact_messages(messages, ...)` — conserva el primer mensaje, un marcador y los últimos N, sin dejar `tool_result` huérfanos.
 `KlausIgnore` — parser de `.klausignore` (formato `.gitignore`) usado por las tools de búsqueda.

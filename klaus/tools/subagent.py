@@ -151,7 +151,7 @@ async def _run_subagent(
     from ..provider.base import ProviderAdapter
     from ..tools import TOOL_HANDLERS, TOOL_SCHEMAS
 
-    ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
+    ctx = load_project_context(cwd, max_tokens=config.context.max_klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
     active_schemas = sub_schemas if sub_schemas is not None else list(TOOL_SCHEMAS)

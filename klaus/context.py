@@ -1,10 +1,12 @@
-"""Gestión del contexto del proyecto: .klausignore, CLAUS.md y token management."""
+"""Gestión del contexto del proyecto: .klausignore, KLAUS.md y token management."""
 
 from __future__ import annotations
 
 import fnmatch
 from pathlib import Path
 from typing import Any
+
+from .compat import klaus_home
 
 # Patrones ignorados por defecto (ampliables por .klausignore)
 _DEFAULT_IGNORE: list[str] = [
@@ -56,15 +58,15 @@ class KlausIgnore:
 
 
 def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str, Any]:
-    """Carga CLAUS.md/CLAUDE.md si existe y devuelve el contexto del proyecto.
+    """Carga KLAUS.md (o CLAUDE.md como fallback) y devuelve el contexto del proyecto.
 
-    También inyecta el índice de memorias de ~/.Klaus/memory/MEMORY.md si existe.
+    También inyecta el índice de memorias de ~/.klaus/memory/MEMORY.md si existe.
     """
     result: dict[str, Any] = {"root": str(project_root)}
 
     base_context = f"Working directory: {project_root}\n\n"
 
-    # CLAUS.md (formato Klaus) tiene prioridad; CLAUDE.md y .CLAUDE.md como fallback
+    # KLAUS.md tiene prioridad; CLAUDE.md y .CLAUDE.md como fallback
     project_text = ""
     for name in ("KLAUS.md", "CLAUDE.md", ".CLAUDE.md"):
         candidate = project_root / name
@@ -91,8 +93,8 @@ def load_project_context(project_root: Path, max_tokens: int = 4000) -> dict[str
 
 
 def _load_memory_index() -> str:
-    """Carga el índice MEMORY.md de ~/.Klaus/memory/ si existe."""
-    index_path = Path.home() / ".Klaus" / "memory" / "MEMORY.md"
+    """Carga el índice MEMORY.md de ~/.klaus/memory/ si existe."""
+    index_path = klaus_home() / "memory" / "MEMORY.md"
     if not index_path.exists():
         return ""
     try:

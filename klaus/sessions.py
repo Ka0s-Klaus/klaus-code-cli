@@ -15,11 +15,13 @@ from typing import Any
 
 from rich.console import Console
 
+from .compat import expand_user_path
+
 console = Console()
 
 
 def _session_dir(storage_path: str) -> Path:
-    path = Path(storage_path).expanduser()
+    path = expand_user_path(storage_path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 

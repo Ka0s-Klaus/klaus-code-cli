@@ -63,7 +63,7 @@ async def run_agent_loop(
     configure_security(config, cwd)
 
     # Cargar contexto del proyecto (CLAUDE.md / CLAUDE.md)
-    ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
+    ctx = load_project_context(cwd, max_tokens=config.context.max_klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
     # --- Inicializar MCP ---
