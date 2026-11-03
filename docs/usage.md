@@ -51,6 +51,7 @@ klaus run <PROMPT> [OPCIONES]
 | `--allow-writes` | flag | false | Auto-aprueba operaciones de escritura |
 | `--allow-bash` | flag | false | Auto-aprueba comandos bash |
 | `--yolo` | flag | false | Equivale a `--allow-writes --allow-bash` |
+| `--mcp-config` | path | — | Fichero JSON/YAML con servidores MCP adicionales (repetible). Ver [🔌 MCP](mcp.md#-servidores-desde-un-fichero---mcp-config) |
 
 > ℹ️ `klaus run` muestra la respuesta completa de cada turno (sin streaming). `--no-stream` solo existe en `klaus repl`.
 
@@ -96,6 +97,7 @@ klaus repl [OPCIONES]
 | `--allow-writes` | flag | false | Auto-aprueba escrituras |
 | `--allow-bash` | flag | false | Auto-aprueba bash |
 | `--yolo` | flag | false | Sin confirmaciones |
+| `--mcp-config` | path | — | Servidores MCP adicionales desde un fichero (repetible) |
 
 ### Comandos especiales dentro del REPL
 
