@@ -18,6 +18,7 @@ from .config import KlausConfig
 from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
+from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
 from .sessions import SessionLock, SessionManager, list_sessions
 from .streaming import StreamRenderer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
@@ -255,6 +256,13 @@ async def run_repl(
         enabled=lock_enabled,
     )
 
+    # Pseudonymizer: antes de cualquier petición al modelo (#55)
+    try:
+        await ensure_pseudonymizer(config, cwd)
+    except PseudonymizerError as e:
+        console.print(f"[red]🔒 {e}[/red]")
+        return 1
+
     if not lock.acquire():
         return 1
 
@@ -390,7 +398,16 @@ async def _repl_loop(
         if cmd == "/model" or cmd.startswith("/model "):
             args = stripped[len("/model"):].strip()
             if args:
+                previous_model = config.provider.model
                 config.provider.model = args
+                # Un cambio local → externo exige registrar los literales en el proxy (#55)
+                try:
+                    await ensure_pseudonymizer(config, cwd)
+                except PseudonymizerError as e:
+                    config.provider.model = previous_model
+                    console.print(f"[red]🔒 {e}[/red]")
+                    console.print(f"[dim]Se mantiene el modelo {previous_model}.[/dim]")
+                    continue
                 console.print(f"[green]✅ Modelo cambiado a:[/green] [cyan]{args}[/cyan]")
                 console.print("[dim]El cambio aplica al siguiente turno de conversación.[/dim]")
             else:

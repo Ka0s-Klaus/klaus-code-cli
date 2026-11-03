@@ -51,6 +51,20 @@ class NetworkConfig(BaseModel):
     timeout_seconds: int = 600
 
 
+class PseudonymizerConfig(BaseModel):
+    """Registro de datos sensibles en el pseudonymizer de klaude-proxy."""
+
+    enabled: bool = True
+    # Si True y la configuración falla con un modelo externo, Klaus aborta en vez de continuar.
+    required: bool = False
+    # Patrones glob (sin distinguir mayúsculas) de modelos servidos en local.
+    # Solo estos se excluyen; cualquier otro modelo se trata como externo.
+    local_models: list[str] = Field(
+        default_factory=lambda: ["kdev*", "ollama/*", "ollama_chat/*"]
+    )
+    timeout_seconds: float = 2.0
+
+
 class MCPServerConfig(BaseModel):
     """Configuración de un servidor MCP externo."""
 
@@ -65,6 +79,7 @@ class KlausConfig(BaseModel):
     session: SessionConfig = Field(default_factory=SessionConfig)
     context: ContextConfig = Field(default_factory=ContextConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
+    pseudonymizer: PseudonymizerConfig = Field(default_factory=PseudonymizerConfig)
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
 
     @property
@@ -136,6 +151,15 @@ network:
   max_retries: 3
   backoff_base_seconds: 1.5
   timeout_seconds: 120
+
+pseudonymizer:
+  # Registra ruta del proyecto, home y username en klaude-proxy para seudonimizarlos.
+  enabled: true
+  # true → si el registro falla con un modelo externo, Klaus aborta (recomendado con cliente).
+  required: false
+  # Solo estos modelos (glob) se consideran locales; el resto se trata como externo.
+  local_models: ["kdev*", "ollama/*", "ollama_chat/*"]
+  timeout_seconds: 2.0
 
 # mcp_servers:
 #   - name: filesystem

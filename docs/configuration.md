@@ -86,9 +86,9 @@ provider:
 | --- | --- | --- | --- |
 | **klaude-proxy local** | `http://localhost:8080/v1` | `anthropic` | Default — proxy en la misma máquina |
 | **klaude-proxy en red** | `http://192.168.1.50:8080/v1` | `anthropic` | Proxy en otro host de la LAN |
-| **Anthropic directo** | `https://api.anthropic.com` | `anthropic` | Sin proxy — coste y latencia directos |
+| **Anthropic directo** | `https://api.anthropic.com` | `anthropic` | Sin proxy: coste y latencia directos y **sin seudonimización** (ver [🔒 pseudonymizer](#-sección-pseudonymizer)) |
 | **Ollama** | `http://localhost:11434/v1` | `openai` | Modelos locales open-source |
-| **OpenAI** | `https://api.openai.com/v1` | `openai` | GPT-4o y familia |
+| **OpenAI** | `https://api.openai.com/v1` | `openai` | GPT-4o y familia, **sin seudonimización** |
 
 > ⚠️ La API key **nunca** va en el config.yaml. Usa la variable de entorno definida en `api_key_env`.
 
@@ -170,6 +170,51 @@ network:
   backoff_base_seconds: 1.5  # Base del backoff exponencial (1.5, 2.25, 3.375...)
   timeout_seconds: 600       # Timeout por request al proveedor (600s para modelos thinking como kdev:latest)
 ```
+
+---
+
+## 🔒 Sección `pseudonymizer`
+
+Klaus registra en klaude-proxy los datos que identifican al usuario (**ruta del proyecto, home y username**). Así el proxy los sustituye por seudónimos antes de enviar la petición a un modelo externo.
+
+```yaml
+pseudonymizer:
+  enabled: true                 # Registrar los literales en el proxy
+  required: false               # true → abortar si no se puede garantizar la seudonimización
+  local_models: ["kdev*", "ollama/*", "ollama_chat/*"]   # Glob, sin distinguir mayúsculas
+  timeout_seconds: 2.0          # Tope total de la llamada al proxy
+```
+
+### Cuándo se configura
+
+El registro se **espera** (con un máximo de `timeout_seconds`) **antes de la primera petición al modelo** en todos los caminos:
+
+| Camino | Momento |
+| --- | --- |
+| `klaus run` | Al arrancar, antes del primer turno |
+| `klaus repl` | Al arrancar la sesión |
+| `/model <nombre>` | Al cambiar de modelo (p. ej. de local a externo) |
+| `spawn_agent` | Antes de lanzar el sub-agente, que puede usar otro modelo |
+
+Un registro correcto se recuerda durante el proceso: los sub-agentes y los cambios de modelo posteriores no repiten la llamada.
+
+### Qué cuenta como modelo local
+
+**Solo los modelos que coinciden con `local_models`.** Cualquier otro se trata como externo y se configura. Los nombres en formato LiteLLM (`openai/gpt-4o`, `anthropic/claude-...`) son **externos**, aunque contengan `/`.
+
+> 💡 Si usas Ollama directamente con nombres sin prefijo (`llama3`), añádelos a `local_models` (p. ej. `"llama3*"`) para evitar el aviso.
+
+### Qué pasa si falla
+
+| Situación | `required: false` (default) | `required: true` |
+| --- | --- | --- |
+| Proxy caído, timeout o error HTTP | ⚠️ Aviso y continúa | 🔒 Aborta sin llamar al modelo (`/model` mantiene el modelo anterior) |
+| `base_url` apunta a la API pública de un proveedor (sin proxy) | ⚠️ Aviso y continúa. **No se envía nada** al endpoint de configuración | 🔒 Aborta |
+| Modelo en `local_models` | ✅ Continúa sin configurar | ✅ Continúa sin configurar |
+
+> 🔐 **Despliegues con cliente / datos sensibles:** usa `required: true`. Es la única forma de garantizar que ninguna petición salga hacia un modelo externo sin seudonimizar. Con `false`, Klaus prioriza la disponibilidad y solo avisa.
+
+> ⚠️ **Limitación conocida:** el registro vive en memoria del proxy. Si klaude-proxy se reinicia durante una sesión de Klaus, hay que reiniciar Klaus para volver a registrar los literales.
 
 ---
 
