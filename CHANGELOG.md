@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > Agrupa todo lo fusionado desde la Fase 15. Las versiones `0.x` anteriores son fases de desarrollo: nunca se etiquetaron ni publicaron (ver [🧪 Development](docs/development.md#-release)).
 
 ### Security
+- **Tools MCP con confirmación**: antes se ejecutaban siempre sin preguntar (la documentación decía lo contrario). Política por servidor `mcp_servers[].confirm` = `auto` (default: pregunta salvo solo lectura o `--allow-writes`/`--yolo`) | `always` (también en YOLO) | `never`; `trust_read_only` para `readOnlyHint`. Sin TTY se deniega lo que requiere confirmación ([#61](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/61))
 - **Workspace**: las tools de ficheros (`read_file`, `list_directory`, `glob_search`, `grep_search`, `write_file`, `edit_file`, `delete_file`, `read_image`) solo operan dentro del proyecto + `security.allowed_paths`. Se resuelven `~`, `..` y symlinks; fuera, se pregunta (también en `--yolo`) o se deniega sin TTY ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
 - **Sub-agentes**: `spawn_agent` ya no fuerza la auto-aprobación (antes evitaba las confirmaciones y las desactivaba para el padre el resto de la sesión), pasa por `_dispatch_tool` (hooks + validación) y valida su `cwd` ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
 - `_dispatch_tool` descarta el argumento `cwd` enviado por el modelo ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))

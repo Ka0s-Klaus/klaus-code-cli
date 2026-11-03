@@ -100,6 +100,13 @@ class MCPServerConfig(BaseModel):
     name: str
     command: list[str]
     env: dict[str, str] = Field(default_factory=dict)
+    # Confirmación de sus tools (#61):
+    #   "auto"   → pregunta salvo tools de solo lectura o escrituras auto-aprobadas (--allow-writes/--yolo)
+    #   "always" → pregunta siempre, también en --yolo (sin TTY se deniega)
+    #   "never"  → nunca pregunta (servidor de plena confianza)
+    confirm: Literal["auto", "always", "never"] = "auto"
+    # En "auto", confiar en annotations.readOnlyHint que declara el propio servidor.
+    trust_read_only: bool = True
 
 
 class KlausConfig(BaseModel):
@@ -211,6 +218,8 @@ security:
 # mcp_servers:
 #   - name: filesystem
 #     command: ["uvx", "mcp-server-filesystem", "/home/user/projects"]
+#     confirm: "auto"          # auto | always | never (ver docs/mcp.md)
+#     trust_read_only: true    # en "auto", no preguntar en tools con readOnlyHint
 #   - name: github
 #     command: ["uvx", "mcp-server-github"]
 #     env:

@@ -19,6 +19,8 @@ mcp_servers:
   - name: "filesystem"
     command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
     env: {}
+    confirm: "auto"           # auto | always | never (ver "Confirmación")
+    trust_read_only: true     # en auto: no preguntar en tools declaradas de solo lectura
 
   - name: "postgres"
     command: ["npx", "-y", "@modelcontextprotocol/server-postgres"]
@@ -32,6 +34,24 @@ mcp_servers:
 ```
 
 > ℹ️ Los servidores MCP se configuran **solo** en `mcp_servers` de `~/.klaus/config.yaml`. La opción `--mcp-config` que mencionaban versiones anteriores de esta guía no está implementada.
+
+---
+
+## ✅ Confirmación
+
+Cada tool MCP puede tener efectos fuera de tu máquina (crear issues, escribir en una base de datos, borrar ficheros), así que se trata como una escritura. La política se fija **por servidor** con `confirm`:
+
+| `confirm` | Tool de solo lectura¹ | Tool con efectos | Con `--allow-writes` / `--yolo` | Sin TTY (CI) |
+|---|---|---|---|---|
+| `auto` (default) | ✅ Sin preguntar | ❓ Pregunta | ✅ Sin preguntar | ❌ Deniega lo que habría preguntado |
+| `always` | ❓ Pregunta | ❓ Pregunta | ❓ **Pregunta igualmente** | ❌ Deniega |
+| `never` | ✅ Sin preguntar | ✅ Sin preguntar | ✅ Sin preguntar | ✅ Ejecuta |
+
+¹ Tools en las que el servidor declara `annotations.readOnlyHint: true`. El agente las ve marcadas como `[MCP:servidor · solo lectura]`. Con `trust_read_only: false`, el hint se ignora y se pregunta también por ellas.
+
+> 💡 **¿Por qué confiar en el hint por defecto?** El servidor MCP ya es código que se ejecuta en tu máquina con tus permisos: si quisiera hacer daño, no necesitaría mentir en un hint. Si el servidor es de un tercero y no lo has revisado, usa `trust_read_only: false` o `confirm: always`.
+
+Al denegar o cancelar, el modelo recibe un resultado explicativo (`status: cancelled` o `error`) y puede seguir con otra estrategia.
 
 ---
 
@@ -77,9 +97,10 @@ sequenceDiagram
 
 ## 🔒 Seguridad
 
-- ⚠️ **Las tools MCP se ejecutan sin confirmación** y **no están confinadas al workspace** de Klaus. El agente muestra la llamada, pero no la detiene. Un servidor como `filesystem` accede a todo lo que se le configure.
-- Configura cada servidor con el **alcance mínimo** (directorios, scopes de token) y evita servidores con efectos secundarios en sesiones `--yolo`.
-- Las tools MCP sí pasan por los hooks PreToolUse/PostToolUse, que pueden bloquearlas. Ver [🔐 Security](security.md).
+- Las tools con efectos **piden confirmación** según `confirm` (ver [✅ Confirmación](#-confirmación)).
+- ⚠️ Las tools MCP **no están confinadas al workspace** de Klaus: el alcance lo decide el servidor. Un servidor `filesystem` accede a todo lo que se le configure. Configura cada servidor con el **alcance mínimo** (directorios, scopes de token).
+- Con `--yolo`, las tools con efectos de servidores en `auto` se ejecutan sin preguntar. Para servidores críticos (producción, datos de cliente), usa `confirm: always`.
+- Las tools MCP pasan por el mismo despacho que las integradas: validación de parámetros requeridos y hooks PreToolUse/PostToolUse, que pueden bloquearlas. Ver [🔐 Security](security.md).
 - Las credenciales en `env` deben ser variables de entorno, no valores literales. Usar la sintaxis `${VAR}` si el shell expande variables en el config.
 - **Nunca** commitear `mcp.json` o secciones de `config.yaml` que contengan tokens o credenciales.
 
