@@ -389,6 +389,120 @@ def config_show() -> None:
     console.print_json(json.dumps(data, indent=2, ensure_ascii=False))
 
 
+@app.command(name="eval")
+def eval_cmd(
+    tasks: list[str] | None = typer.Option(
+        None, "--tasks", "-t", help="Patrón glob de ids de tarea (repetible), p. ej. 'security-*'"
+    ),
+    suite: str = typer.Option("evals/tasks", "--suite", help="Directorio de la batería de tareas"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Override de modelo"),
+    base_url: str | None = typer.Option(None, "--base-url", help="Override de base URL"),
+    repeat: int = typer.Option(1, "--repeat", "-n", min=1, help="Ejecuciones por tarea"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Guarda los resultados en JSON"),
+    verify_tasks: bool = typer.Option(
+        False, "--verify-tasks",
+        help="Valida la batería sin modelo: cada tarea falla con el repo original y pasa con su solución",
+    ),
+    min_success: float | None = typer.Option(
+        None, "--min-success", min=0.0, max=1.0,
+        help="Sale con código 1 si la tasa de éxito global queda por debajo (0–1)",
+    ),
+    keep: bool = typer.Option(False, "--keep", help="Conserva los directorios de trabajo"),
+    verbose: bool = typer.Option(False, "--verbose", help="Muestra la salida del agente"),
+) -> None:
+    """Ejecuta la batería de evaluación y mide la calidad del agente (#71)."""
+    from .eval import TaskError, load_suite, run_task, summarize, verify_task
+
+    try:
+        suite_tasks = load_suite(Path(suite), tasks)
+    except TaskError as e:
+        console.print(f"[red]Batería inválida:[/red] {e}")
+        raise typer.Exit(4)
+    if not suite_tasks:
+        console.print("[yellow]Ninguna tarea coincide con el filtro.[/yellow]")
+        raise typer.Exit(1)
+
+    if verify_tasks:
+        failures = 0
+        for task in suite_tasks:
+            res = verify_task(task)
+            mark = "[green]✓[/green]" if res.ok else "[red]✗[/red]"
+            console.print(f"{mark} {task.id} [dim]({task.spec.category})[/dim]")
+            for problem in res.problems:
+                console.print(f"    [red]{problem}[/red]")
+            failures += not res.ok
+        console.print(f"\n{len(suite_tasks) - failures}/{len(suite_tasks)} tareas válidas")
+        raise typer.Exit(1 if failures else 0)
+
+    try:
+        config = load_config(base_url_override=base_url, model_override=model)
+    except Exception as e:
+        console.print(f"[red]Error de configuración:[/red] {e}")
+        raise typer.Exit(4)
+
+    console.print(
+        f"[bold]klaus eval[/bold] · modelo [cyan]{config.provider.model}[/cyan] · "
+        f"{len(suite_tasks)} tareas × {repeat}"
+    )
+    results = []
+    for task in suite_tasks:
+        for i in range(1, repeat + 1):
+            r = asyncio.run(run_task(task, config, _get_adapter, run=i, verbose=verbose, keep=keep))
+            mark = "[green]✓[/green]" if r.passed else "[red]✗[/red]"
+            failed = [c.type for c in r.checks if not c.passed]
+            extra = f" [red]{r.error}[/red]" if r.error else (f" [dim]falla: {', '.join(failed)}[/dim]" if failed else "")
+            where = f" [dim]{r.workdir}[/dim]" if r.workdir else ""
+            console.print(
+                f"{mark} {task.id} [dim]#{i} · {r.turns} turnos · {r.duration_s}s · "
+                f"{r.input_tokens + r.output_tokens:,} tokens[/dim]{extra}{where}"
+            )
+            results.append(r)
+
+    summary = summarize(results)
+    table = Table(title="Resultados por categoría")
+    for col in ("Categoría", "Éxito", "Turnos", "Tokens in/out", "Tiempo", "Bloqueos"):
+        table.add_column(col)
+    rows = [*summary["by_category"].items(), ("TOTAL", summary["overall"])]
+    for name, m in rows:
+        table.add_row(
+            name,
+            f"{m['passed']}/{m['runs']} ({m['success_rate']:.0%})",
+            f"{m['avg_turns']}",
+            f"{m['avg_input_tokens']:,} / {m['avg_output_tokens']:,}",
+            f"{m['avg_duration_s']}s",
+            f"{m['blocked_outside']} ws · {m['blocked_bash']} bash",
+        )
+    console.print(table)
+
+    if output:
+        import json
+        import subprocess
+
+        sha = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=suite
+        ).stdout.strip() or None
+        report = {
+            "meta": {
+                "klaus_version": __version__,
+                "model": config.provider.model,
+                "api_format": config.provider.api_format,
+                "suite": suite,
+                "suite_commit": sha,
+                "repeat": repeat,
+                "date": datetime.now().isoformat(timespec="seconds"),
+            },
+            "summary": summary,
+            "results": [r.to_dict() for r in results],
+        }
+        Path(output).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        console.print(f"[dim]Resultados guardados en {output}[/dim]")
+
+    rate = summary["overall"]["success_rate"]
+    if min_success is not None and rate < min_success:
+        console.print(f"[red]Tasa de éxito {rate:.0%} < mínimo {min_success:.0%}[/red]")
+        raise typer.Exit(1)
+
+
 @app.callback(invoke_without_command=True)
 def version_cb(
     ctx: typer.Context,

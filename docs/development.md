@@ -40,11 +40,12 @@ pip install -e ".[dev]"        # mismo set de dependencias que el CI
 | 🧹 Lint | `ruff check .` | `[tool.ruff]` en `pyproject.toml` |
 | 🔎 Tipado | `mypy .` | `[tool.mypy]` en `pyproject.toml` |
 | 🧪 Tests | `pytest tests/ -v --tb=short` | `[tool.pytest.ini_options]` |
+| 📏 Batería de evaluación | `klaus eval --verify-tasks` | `evals/tasks/` ([📏 Evaluation](evaluation.md)) |
 
 Todo de una vez, antes de abrir un PR:
 
 ```bash
-ruff check . && mypy . && pytest tests/ -q
+ruff check . && mypy . && pytest tests/ -q && klaus eval --verify-tasks
 ```
 
 `ruff check . --fix` corrige automáticamente imports y modernizaciones (`UP`). Revisa el diff antes de commitear.

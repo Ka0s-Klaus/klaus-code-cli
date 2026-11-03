@@ -26,6 +26,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Variables de entorno del proxy (`KLAUS_PROXY_URL`, `KLAUS_MODEL`, `KLAUS_API_FORMAT`) ([#37](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/37), renombradas en [#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - REPL: `/tokens`, indicador de modo YOLO ([#32](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/32))
 - Secciones de config `pseudonymizer` y `security`
+- **Batería de evaluación** (Fase 0): `klaus eval` ejecuta el agente sobre tareas aisladas y mide éxito, turnos, tokens, tiempo y bloqueos; `--verify-tasks` valida la batería sin modelo (job de CI). 12 tareas iniciales en 7 categorías, con tests ocultos, mutation testing y trampas de seguridad. `RunStats` en `run_agent_loop` ([#71](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/71))
 - `klaus/compat.py`: avisos de obsolescencia para nombres anteriores ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`

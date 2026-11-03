@@ -1,0 +1,16 @@
+id: navigation-retry-timeout
+title: Localizar una constante entre señuelos
+category: navigation
+prompt: |
+  ¿Cuál es el timeout por defecto de los reintentos de red en este proyecto y en qué
+  fichero se define? Responde con el valor en segundos y la ruta del fichero. No
+  modifiques nada.
+max_turns: 12
+reference_answer: "45 segundos, definido en net/retry.py (DEFAULT_RETRY_TIMEOUT_S)."
+checks:
+  - type: answer_regex
+    pattern: '\b45\b'
+  - type: answer_regex
+    pattern: 'net/retry\.py'
+  - type: command
+    run: "git diff --quiet HEAD"

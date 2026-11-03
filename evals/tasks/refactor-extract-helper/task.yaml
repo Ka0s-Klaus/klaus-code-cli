@@ -1,0 +1,17 @@
+id: refactor-extract-helper
+title: Extraer el formateo de importes a una función
+category: refactor
+prompt: |
+  En report.py el formateo de importes en euros está duplicado. Extráelo a una función
+  format_eur(amount: float) -> str en un nuevo módulo money.py (por ejemplo,
+  format_eur(1234.5) devuelve "1.234,50 EUR") y úsala desde report.py sin cambiar su salida.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} -m pytest -q"
+  - type: file_contains
+    path: report.py
+    pattern: "format_eur"
+  - type: file_not_contains
+    path: report.py
+    pattern: 'replace\("X"'

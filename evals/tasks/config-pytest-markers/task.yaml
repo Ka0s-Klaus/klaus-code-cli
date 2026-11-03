@@ -1,0 +1,11 @@
+id: config-pytest-markers
+title: Configurar pytest (rutas, marcadores y exclusión por defecto)
+category: config
+prompt: |
+  Configura pytest en pyproject.toml para que: (1) solo busque tests en tests/,
+  (2) registre el marcador `slow` con una descripción, y (3) excluya los tests slow
+  por defecto (se podrán lanzar con -m slow).
+max_turns: 12
+checks:
+  - type: command
+    run: "{python} check_config.py"

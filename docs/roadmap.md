@@ -70,7 +70,7 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
 
 **Objetivo:** poder medir la calidad del agente y publicar una primera versión con un proceso que no se rompa.
 
-1. **Batería de evaluación** *(el entregable principal)*
+1. **Batería de evaluación** *(el entregable principal)*: primera versión con 12 tareas en [#71](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/71) → [📏 Evaluation](evaluation.md)
     - 30–50 tareas reales y reproducibles: corregir un bug, añadir un test, refactorizar, navegar un repo desconocido, tareas con trampas de seguridad.
     - Cada tarea en un repo fijado, con un comprobador automático (tests que deben pasar, o un diff esperado).
     - Un comando `klaus eval --model <m>` que ejecuta la batería y saca una tabla: tasa de éxito, turnos, tokens, coste y tiempo.

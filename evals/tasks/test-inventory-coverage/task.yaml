@@ -1,0 +1,13 @@
+id: test-inventory-coverage
+title: Escribir tests que detecten errores en Inventory.remove
+category: test
+prompt: |
+  Añade tests en tests/test_inventory.py que cubran Inventory.remove: casos normales,
+  retirar todo el stock, stock insuficiente, cantidades no positivas y un SKU que no
+  existe. No modifiques inventory.py.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} check_tests.py"
+  - type: command
+    run: "git diff --quiet HEAD -- inventory.py"
