@@ -15,7 +15,7 @@ from rich.table import Table
 
 from .agent import _dispatch_tool
 from .config import KlausConfig
-from .context import compact_messages, load_project_context
+from .context import context_usage_line, load_project_context, maybe_compact
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
@@ -545,6 +545,23 @@ async def _repl_loop(
                 console.print(f"[yellow]⚠️  No se pudo guardar la sesión: {e}[/yellow]")
 
 
+def _auto_compact(
+    messages: list[dict[str, Any]], context_tokens: int, config: KlausConfig
+) -> list[dict[str, Any]]:
+    messages, dropped, threshold = maybe_compact(
+        messages,
+        context_tokens,
+        config.context.max_context_tokens,
+        enabled=config.context.auto_compact,
+    )
+    if dropped > 0:
+        console.print(
+            f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
+            f"(threshold: {threshold:,} tokens)[/yellow]"
+        )
+    return messages
+
+
 async def _run_turn(
     messages: list[dict[str, Any]],
     adapter: ProviderAdapter,
@@ -557,8 +574,9 @@ async def _run_turn(
 ) -> tuple[list[dict[str, Any]], int, int]:
     """Procesa un turno (usuario → modelo → tools* → modelo). Devuelve (mensajes, tokens_input, tokens_output)."""
     max_turns = config.behavior.max_agent_turns
-    total_input: int = 0
+    total_input: int = 0  # consumo del turno (se suma a /tokens)
     total_output: int = 0
+    context_tokens: int = 0  # tamaño del contexto en la última petición (#57)
 
     for turn in range(max_turns):
         renderer = StreamRenderer(console)
@@ -597,16 +615,19 @@ async def _run_turn(
             if text:
                 console.print(Markdown(text))
 
-        if total_input > 0:
-            ctx_pct = int(total_input / config.context.max_context_tokens * 100)
+        if usage["input_tokens"] > 0:
+            context_tokens = usage["input_tokens"]
             console.print(
-                f"[dim]📊 tokens — input: {total_input:,} ({ctx_pct}%) "
-                f"| output: {total_output:,}[/dim]"
+                context_usage_line(
+                    context_tokens, config.context.max_context_tokens, total_input, total_output
+                )
             )
 
         if stop == "end_turn" or not tool_calls:
             if response.get("content"):
                 messages.append({"role": "assistant", "content": response["content"]})
+            # También en turnos sin tools: una sesión de solo chat también crece (#57)
+            messages = _auto_compact(messages, context_tokens, config)
             return messages, total_input, total_output
 
         if stop == "tool_use":
@@ -614,7 +635,9 @@ async def _run_turn(
 
             tool_results: list[dict[str, Any]] = []
             for tc in tool_calls:
-                result = await _dispatch_tool(tc, config, cwd, active_handlers)
+                result = await _dispatch_tool(
+                    tc, config, cwd, active_handlers, schemas=active_schemas
+                )
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tc["id"],
@@ -622,16 +645,8 @@ async def _run_turn(
                 })
             messages.append({"role": "user", "content": tool_results})
 
-            if config.context.auto_compact:
-                threshold = int(config.context.max_context_tokens * 0.8)
-                if total_input >= threshold:
-                    messages, dropped = compact_messages(messages, keep_last=6)
-                    if dropped > 0:
-                        console.print(
-                            f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
-                            f"(threshold: {threshold:,} tokens)[/yellow]"
-                        )
-                        total_input = 0
+            # Ya no se pone total_input a 0 al compactar: falseaba el consumo de /tokens
+            messages = _auto_compact(messages, context_tokens, config)
             continue
 
         if stop == "max_tokens":
