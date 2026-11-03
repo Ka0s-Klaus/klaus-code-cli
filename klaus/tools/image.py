@@ -102,6 +102,9 @@ async def read_image_from_clipboard(
         img = ImageGrab.grabclipboard()
         if img is None:
             return {"error": "No hay imagen en el portapapeles"}
+        if isinstance(img, list):
+            # macOS devuelve rutas si se copiaron ficheros en lugar de una imagen
+            return {"error": "El portapapeles contiene ficheros, no una imagen"}
 
         import io
 
@@ -169,7 +172,7 @@ def _resize_image(raw: bytes, media_type: str, max_kb: int) -> tuple[bytes, str]
     for _ in range(6):
         new_w = int(img.width * scale)
         new_h = int(img.height * scale)
-        resized = img.resize((new_w, new_h), Image.LANCZOS)
+        resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         if fmt == "JPEG":
             resized.save(buf, format=fmt, quality=85)

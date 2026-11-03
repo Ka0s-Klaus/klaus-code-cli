@@ -16,6 +16,14 @@ from rich.console import Console
 console = Console()
 
 
+
+def _tool_input_schema(tool: Any) -> dict[str, Any] | None:
+    """Devuelve el JSON Schema de una tool MCP (mcp 2.x: input_schema; 1.x: inputSchema)."""
+    schema = getattr(tool, "input_schema", None)
+    if schema is None:
+        schema = getattr(tool, "inputSchema", None)
+    return schema
+
 class MCPRegistry:
     """Gestiona servidores MCP: conexión, discovery de tools y dispatch."""
 
@@ -69,7 +77,7 @@ class MCPRegistry:
                         "description": (
                             f"[MCP:{server.name}] {tool.description or tool.name}"
                         ),
-                        "input_schema": tool.inputSchema or {
+                        "input_schema": _tool_input_schema(tool) or {
                             "type": "object",
                             "properties": {},
                             "required": [],
