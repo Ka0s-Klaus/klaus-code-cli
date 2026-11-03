@@ -146,6 +146,50 @@ _COMPACTION_MARKER = (
 )
 
 
+def _is_tool_result_message(message: dict[str, Any]) -> bool:
+    content = message.get("content")
+    return (
+        message.get("role") == "user"
+        and isinstance(content, list)
+        and any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content)
+    )
+
+
+def maybe_compact(
+    messages: list[dict[str, Any]],
+    context_tokens: int,
+    max_context_tokens: int,
+    enabled: bool = True,
+    ratio: float = 0.8,
+    keep_last: int = 6,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Compacta si el contexto **actual** supera ``ratio`` del límite.
+
+    ``context_tokens`` es el ``input_tokens`` de la última respuesta: cada petición
+    reenvía el historial completo, así que ese valor ya es el tamaño del contexto.
+    Sumarlo turno a turno (como antes de #57) lo inflaba y forzaba compactaciones
+    prematuras.
+
+    Devuelve (mensajes, n_eliminados, umbral).
+    """
+    threshold = int(max_context_tokens * ratio)
+    if not enabled or context_tokens < threshold:
+        return messages, 0, threshold
+    compacted, dropped = compact_messages(messages, keep_last=keep_last)
+    return compacted, dropped, threshold
+
+
+def context_usage_line(
+    context_tokens: int, max_context_tokens: int, total_input: int, total_output: int
+) -> str:
+    """Línea de estado: tamaño de contexto actual (%) y consumo acumulado."""
+    pct = int(context_tokens / max_context_tokens * 100) if max_context_tokens else 0
+    return (
+        f"[dim]📊 contexto: {context_tokens:,} ({pct}%) "
+        f"| consumo — input: {total_input:,} · output: {total_output:,}[/dim]"
+    )
+
+
 def compact_messages(
     messages: list[dict[str, Any]],
     keep_last: int = 6,
@@ -161,7 +205,11 @@ def compact_messages(
 
     first = messages[0]
     tail = messages[-keep_last:]
-    dropped = len(messages) - 1 - keep_last  # excluye el primer mensaje
+    # Un tool_result cuyo tool_use se ha recortado deja la conversación inválida
+    # (la API responde 400). Se descartan los tool_result huérfanos del inicio (#57).
+    while tail and _is_tool_result_message(tail[0]):
+        tail = tail[1:]
+    dropped = len(messages) - 1 - len(tail)  # excluye el primer mensaje
 
     marker: dict[str, Any] = {
         "role": "user",

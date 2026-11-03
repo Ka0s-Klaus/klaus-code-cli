@@ -147,6 +147,7 @@ behavior:
   auto_approve_writes: false
   auto_approve_bash: false
   max_agent_turns: 25
+  max_agent_depth: 3
   plan_mode: false
   streaming: true
 
@@ -164,7 +165,7 @@ context:
 network:
   max_retries: 3
   backoff_base_seconds: 1.5
-  timeout_seconds: 120
+  timeout_seconds: 600
 
 pseudonymizer:
   # Registra ruta del proyecto, home y username en klaude-proxy para seudonimizarlos.
