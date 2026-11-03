@@ -115,12 +115,16 @@ Comandos expuestos:
 - `run_agent_loop(prompt, ...)` — entry point público para el modo `run`
 - `_agent_loop(messages, ...)` — loop interno multi-turn que acumula mensajes y despacha tools
 - `_run_plan_phase(...)` — modo plan: primer turno con prompt system que deshabilita tools, genera plan, pide confirmación humana y luego ejecuta
+- `_dispatch_tool(tool_call, config, cwd, handlers, schemas=...)` — **único camino** para ejecutar una tool, compartido por `run`, `repl` y `spawn_agent`:
+  1. descarta un `cwd` enviado por el modelo
+  2. valida los parámetros requeridos contra los **schemas activos** (built-in + MCP) y rechaza los parámetros que el handler no acepta
+  3. hook PreToolUse → handler (**una sola invocación**; `cwd` se pasa solo si la firma lo acepta, vía `inspect.signature`) → hook PostToolUse
 
 ### `repl.py` — REPL interactivo
 
 - `run_repl(...)` — configura la sesión y arranca el loop
 - `_repl_loop(...)` — loop de input → `_run_turn` → output con soporte de comandos especiales (`/clear`, `/help`, `/tokens`, etc.)
-- `_run_turn(messages, ...)` — **compartido con agent.py** — llama al LLM, acumula tool calls y devuelve `(messages, input_tokens, output_tokens)`
+- `_run_turn(messages, ...)` — llama al LLM, despacha tools con `_dispatch_tool` y devuelve `(messages, input_tokens, output_tokens)` del turno (consumo, que se suma a `/tokens`)
 
 ### `config.py` — Configuración
 
@@ -157,7 +161,8 @@ async def close() -> None
 ### `context.py` — Gestión de contexto
 
 `load_project_context(project_root)` — carga CLAUS.md del proyecto y ancestors.
-`compact_messages(messages, ...)` — reduce el historial eliminando mensajes intermedios cuando el contexto supera el 80% del límite.
+`maybe_compact(messages, context_tokens, max_context_tokens, ...)` — compacta si el contexto **actual** (`input_tokens` de la última respuesta) supera el 80 % del límite.
+`compact_messages(messages, ...)` — conserva el primer mensaje, un marcador y los últimos N, sin dejar `tool_result` huérfanos.
 `KlausIgnore` — parser de `.klausignore` (formato `.gitignore`) usado por las tools de búsqueda.
 
 ### `mcp/client.py` — Cliente MCP

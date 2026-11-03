@@ -198,7 +198,9 @@ async def _run_subagent(
                 tool_results: list[dict[str, Any]] = []
                 for tc in tool_calls:
                     # Mismo camino que el padre: validación + hooks Pre/PostToolUse (#56)
-                    res = await _dispatch_tool(tc, config, cwd, active_handlers)
+                    res = await _dispatch_tool(
+                        tc, config, cwd, active_handlers, schemas=active_schemas
+                    )
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tc["id"],

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -15,7 +16,7 @@ from rich.spinner import Spinner
 from rich.syntax import Syntax
 
 from .config import KlausConfig
-from .context import compact_messages, load_project_context
+from .context import context_usage_line, load_project_context, maybe_compact
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
@@ -109,8 +110,9 @@ async def _agent_loop(
     messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
     max_turns = config.behavior.max_agent_turns
 
-    total_input_tokens: int = 0
+    total_input_tokens: int = 0  # consumo acumulado (facturación)
     total_output_tokens: int = 0
+    context_tokens: int = 0  # tamaño del contexto en la última petición
 
     # --- Fase de planificación (opcional) ---
     if config.behavior.plan_mode:
@@ -145,10 +147,14 @@ async def _agent_loop(
         total_output_tokens += usage["output_tokens"]
 
         if usage["input_tokens"] > 0:
-            ctx_pct = int(total_input_tokens / config.context.max_context_tokens * 100)
+            context_tokens = usage["input_tokens"]
             console.print(
-                f"[dim]📊 tokens — input: {total_input_tokens:,} ({ctx_pct}%) "
-                f"| output: {total_output_tokens:,}[/dim]"
+                context_usage_line(
+                    context_tokens,
+                    config.context.max_context_tokens,
+                    total_input_tokens,
+                    total_output_tokens,
+                )
             )
 
         stop = adapter.stop_reason(response)
@@ -166,7 +172,9 @@ async def _agent_loop(
 
             tool_results: list[dict[str, Any]] = []
             for tc in tool_calls:
-                result = await _dispatch_tool(tc, config, cwd, active_handlers)
+                result = await _dispatch_tool(
+                    tc, config, cwd, active_handlers, schemas=active_schemas
+                )
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tc["id"],
@@ -175,16 +183,17 @@ async def _agent_loop(
 
             messages.append({"role": "user", "content": tool_results})
 
-            if config.context.auto_compact:
-                threshold = int(config.context.max_context_tokens * 0.8)
-                if total_input_tokens >= threshold:
-                    messages, dropped = compact_messages(messages, keep_last=6)
-                    if dropped > 0:
-                        console.print(
-                            f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
-                            f"(threshold: {threshold:,} tokens)[/yellow]"
-                        )
-                        total_input_tokens = 0
+            messages, dropped, threshold = maybe_compact(
+                messages,
+                context_tokens,
+                config.context.max_context_tokens,
+                enabled=config.context.auto_compact,
+            )
+            if dropped > 0:
+                console.print(
+                    f"[yellow]🗜️  Auto-compact: {dropped} mensajes eliminados "
+                    f"(threshold: {threshold:,} tokens)[/yellow]"
+                )
 
             continue
 
@@ -251,8 +260,15 @@ async def _dispatch_tool(
     handlers: dict[str, Any] | None = None,
     hook_runner: HookRunner | None = None,
     session_id: str = "",
+    schemas: list[dict[str, Any]] | None = None,
 ) -> Any:
-    """Despacha una tool call al handler correspondiente, con hooks opcionales."""
+    """Despacha una tool call: validación → hook PreToolUse → handler → hook PostToolUse.
+
+    ``schemas`` son los schemas activos (built-in + MCP) contra los que se validan
+    los parámetros requeridos; por defecto, los built-in.
+
+    El handler se invoca **una sola vez** (#57).
+    """
     from .hooks import HookRunner  # import local evita circular
 
     name = tool_call.get("name", "")
@@ -272,7 +288,8 @@ async def _dispatch_tool(
     # Validar parámetros requeridos antes de invocar el handler.
     # Devuelve un error accionable al modelo en lugar de una excepción Python
     # críptica que provoca bucles de reintentos hasta max_agent_turns.
-    _schema = next((s for s in TOOL_SCHEMAS if s["name"] == name), None)
+    _schemas = schemas if schemas is not None else TOOL_SCHEMAS
+    _schema = next((s for s in _schemas if s.get("name") == name), None)
     if _schema:
         _required = _schema.get("input_schema", {}).get("required", [])
         _missing = [p for p in _required if p not in args]
@@ -286,21 +303,30 @@ async def _dispatch_tool(
                 )
             }
 
+    # Parámetros que el handler no acepta → error accionable, sin invocarlo
+    _accepted, _accepts_any, _wants_cwd = _handler_params(handler)
+    if not _accepts_any:
+        _unknown = sorted(set(args) - _accepted)
+        if _unknown:
+            _valid = ", ".join(sorted(_accepted - {"cwd"})) or "(ninguno)"
+            return {
+                "error": (
+                    f"Parámetros desconocidos en '{name}': {', '.join(_unknown)}. "
+                    f"Parámetros válidos: {_valid}"
+                )
+            }
+
     # ── PreToolUse hook ──────────────────────────────────────────────────────
     runner = hook_runner or HookRunner(project_root=cwd)
     allowed = await runner.run_pre_tool(name, args, session_id=session_id)
     if not allowed:
         return {"error": f"Ejecución de {name} bloqueada por hook PreToolUse"}
 
+    # Una única invocación. Antes, un TypeError lanzado *dentro* del handler
+    # provocaba un segundo intento sin cwd: efectos duplicados en otro directorio.
+    call_kwargs = {**args, "cwd": cwd} if _wants_cwd else dict(args)
     try:
-        result = await handler(**args, cwd=cwd)
-    except TypeError:
-        try:
-            result = await handler(**args)
-        except Exception as e:
-            result = {"error": f"Error ejecutando {name}: {e}"}
-            await runner.run_post_tool_error(name, args, str(e), session_id=session_id)
-            return result
+        result = await handler(**call_kwargs)
     except Exception as e:
         result = {"error": f"Error ejecutando {name}: {e}"}
         await runner.run_post_tool_error(name, args, str(e), session_id=session_id)
@@ -310,6 +336,26 @@ async def _dispatch_tool(
     await runner.run_post_tool(name, args, result, session_id=session_id)
 
     return result
+
+
+def _handler_params(handler: Any) -> tuple[set[str], bool, bool]:
+    """(parámetros aceptados, acepta **kwargs, se le debe pasar cwd).
+
+    Sigue ``__wrapped__`` (decoradores como ``guard_workspace``). Si la firma no se
+    puede inspeccionar, se asume que acepta cualquier argumento salvo ``cwd``.
+    """
+    try:
+        sig = inspect.signature(handler)
+    except (TypeError, ValueError):
+        return set(), True, False
+    params = sig.parameters
+    accepts_any = any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+    named = {
+        n
+        for n, p in params.items()
+        if p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    }
+    return named, accepts_any, "cwd" in named or accepts_any
 
 
 def _print_tool_call(name: str, args: dict[str, Any]) -> None:
