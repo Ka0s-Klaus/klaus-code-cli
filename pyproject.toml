@@ -7,7 +7,7 @@ name = "klaus-code-cli"
 version = "0.15.0"
 description = "Klaus Code CLI — agente de codificación agnóstico de proveedor"
 readme = "README.md"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 authors = [{name = "Ka0s-Klaus", email = "santacana.canton@icloud.com"}]
 keywords = ["ai", "cli", "coding-assistant", "llm", "agent"]
 classifiers = [

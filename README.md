@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Ka0s-Klaus/klaus-code-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Ka0s-Klaus/klaus-code-cli/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -155,4 +155,4 @@ Todo cambio sigue el flujo **issue → rama → PR con aprobación humana**. Ver
 
 ## 📄 Licencia
 
-MIT © Ka0s-Klaus
+[MIT](LICENSE) © 2026 Ka0s
