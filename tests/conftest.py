@@ -28,9 +28,10 @@ def disable_confirmations():
 
 @pytest.fixture(autouse=True)
 def isolate_env(monkeypatch):
-    """Aísla los tests de variables KLAUDE_* presentes en el entorno del desarrollador."""
-    for var in ("KLAUDE_PROXY_URL", "KLAUDE_MODEL", "KLAUDE_API_FORMAT", "KLAUDE_API_KEY"):
-        monkeypatch.delenv(var, raising=False)
+    """Aísla los tests de variables KLAUS_* / KLAUDE_* presentes en el entorno del desarrollador."""
+    for prefix in ("KLAUS_", "KLAUDE_"):
+        for var in ("PROXY_URL", "MODEL", "API_FORMAT", "API_KEY"):
+            monkeypatch.delenv(prefix + var, raising=False)
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +46,7 @@ def reset_pseudonymizer_cache():
 
 @pytest.fixture(autouse=True)
 def reset_security_state(tmp_path_factory, monkeypatch):
-    """Estado de seguridad limpio por test y almacén de confianza fuera de ~/.Klaus."""
+    """Estado de seguridad limpio por test y almacén de confianza fuera de ~/.klaus."""
     import klaus.security as sec
 
     sec.reset_security()

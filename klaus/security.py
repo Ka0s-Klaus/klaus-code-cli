@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar
 from rich.console import Console
 from rich.prompt import Confirm
 
+from .compat import klaus_home
+
 if TYPE_CHECKING:
     from .config import KlausConfig
 
@@ -38,7 +40,7 @@ _granted: set[Path] = set()  # rutas exteriores aprobadas por el usuario en esta
 
 _project_hooks_policy: HooksPolicy = "ask"
 _hooks_decisions: dict[str, tuple[str, bool]] = {}  # hooks_dir → (digest, trusted)
-TRUST_STORE: Path = Path.home() / ".Klaus" / "trusted_hooks.json"
+TRUST_STORE: Path = klaus_home() / "trusted_hooks.json"
 
 _bash_allowlist: list[list[str]] = []
 
@@ -125,7 +127,7 @@ def check_access(target: Path, op: str, cwd: Path | None = None) -> None:
     raise WorkspaceError(
         f"Acceso denegado: '{target}' está fuera del workspace ({roots}). "
         "Trabaja con rutas dentro del proyecto. Si de verdad se necesita, el usuario "
-        "puede añadirla a security.allowed_paths en ~/.Klaus/config.yaml."
+        "puede añadirla a security.allowed_paths en ~/.klaus/config.yaml."
     )
 
 
@@ -190,7 +192,7 @@ def _save_trust_store(store: dict[str, str]) -> None:
 def project_hooks_trusted(hooks_dir: Path) -> bool:
     """¿Se pueden ejecutar los hooks de proyecto de ``hooks_dir``?
 
-    Un repo clonado puede traer ``.Klaus/hooks`` ejecutables: es código de un
+    Un repo clonado puede traer ``.klaus/hooks`` ejecutables: es código de un
     tercero. Se pide confianza explícita la primera vez y cada vez que cambian
     (hash del contenido). Sin TTY no se ejecutan, salvo ``project_hooks: trust``.
     """

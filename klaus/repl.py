@@ -14,6 +14,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .agent import _dispatch_tool
+from .compat import klaus_home, project_klaus_dir
 from .config import KlausConfig
 from .context import context_usage_line, load_project_context, maybe_compact
 from .mcp.client import MCPRegistry
@@ -40,9 +41,9 @@ _SPECIAL_COMMANDS = {
     "/model [nombre]": "Ver o cambiar el modelo activo en esta sesión",
     # Fase 3
     "/todos": "Mostrar la lista de tareas de la sesión actual",
-    # Fase 7 (custom): los comandos de ~/.Klaus/commands/ se añaden dinámicamente
+    # Fase 7 (custom): los comandos de ~/.klaus/commands/ se añaden dinámicamente
     # Fase 8
-    "/memory list": "Listar memorias persistentes en ~/.Klaus/memory/",
+    "/memory list": "Listar memorias persistentes en ~/.klaus/memory/",
     "/memory add <nombre> <contenido>": "Crear o actualizar una memoria",
     # Fase 9
     "/checkpoint [nombre]": "Crear un checkpoint del estado actual de la conversación",
@@ -103,15 +104,15 @@ def _print_help(custom_commands: dict[str, str] | None = None) -> None:
 
 
 def _load_custom_commands(cwd: Path) -> dict[str, str]:
-    """Carga comandos slash personalizados de ~/.Klaus/commands/ y .Klaus/commands/.
+    """Carga comandos slash personalizados de ~/.klaus/commands/ y .klaus/commands/.
 
     Cada fichero .md es un comando: el nombre del fichero (sin extensión, con / prefijo)
     es el comando, y el contenido es el prompt. $ARGUMENTS se reemplaza con los args del usuario.
     """
     commands: dict[str, str] = {}
     search_dirs = [
-        Path.home() / ".Klaus" / "commands",
-        cwd / ".Klaus" / "commands",
+        klaus_home() / "commands",
+        project_klaus_dir(cwd) / "commands",
     ]
     for commands_dir in search_dirs:
         if not commands_dir.is_dir():
@@ -128,8 +129,8 @@ def _load_custom_commands(cwd: Path) -> dict[str, str]:
 
 
 def _remove_memory(name: str) -> None:
-    """Elimina una memoria de ~/.Klaus/memory/ y su entrada del índice MEMORY.md."""
-    memory_dir = Path.home() / ".Klaus" / "memory"
+    """Elimina una memoria de ~/.klaus/memory/ y su entrada del índice MEMORY.md."""
+    memory_dir = klaus_home() / "memory"
     mem_file = memory_dir / f"{name}.md"
 
     if not mem_file.exists():
@@ -239,7 +240,7 @@ async def run_repl(
 
     cwd = project_root
     configure_security(config, cwd)
-    ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
+    ctx = load_project_context(cwd, max_tokens=config.context.max_klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
     effective_persist = persist and config.session.persist

@@ -330,7 +330,7 @@ async def test_bash_without_allowlist_unchanged(project: Path) -> None:
 
 
 def _project_hook(project: Path, body: str) -> Path:
-    hooks = project / ".Klaus" / "hooks"
+    hooks = project / ".klaus" / "hooks"
     hooks.mkdir(parents=True, exist_ok=True)
     script = hooks / "PreToolUse.sh"
     script.write_text(f"#!/bin/sh\n{body}\n")
