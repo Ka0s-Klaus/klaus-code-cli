@@ -2,6 +2,9 @@
 
 Lifecycle via AsyncExitStack — llama a startup() al arrancar el agente
 y shutdown() al salir (en bloque finally).
+
+Confirmación (#61): cada tool MCP se ejecuta según ``mcp_servers[].confirm``
+(``auto`` | ``always`` | ``never``). Ver :func:`needs_confirmation`.
 """
 
 from __future__ import annotations
@@ -17,12 +20,63 @@ console = Console()
 
 
 
+def _tool_read_only(tool: Any) -> bool:
+    """True si el servidor declara la tool de solo lectura (mcp 2.x: read_only_hint; 1.x: readOnlyHint)."""
+    ann = getattr(tool, "annotations", None)
+    if ann is None:
+        return False
+    hint = getattr(ann, "read_only_hint", None)
+    if hint is None:
+        hint = getattr(ann, "readOnlyHint", None)
+    return hint is True
+
+
+def needs_confirmation(server: Any, read_only: bool) -> tuple[bool, bool]:
+    """(hay que confirmar, confirmación forzada aunque las escrituras estén auto-aprobadas).
+
+    - ``never``: nunca.
+    - ``always``: siempre, también con ``--yolo``.
+    - ``auto``: no en tools de solo lectura (si ``trust_read_only``); en el resto,
+      igual que ``write_file``: se omite con ``--allow-writes`` / ``--yolo``.
+    """
+    from ..tools import write
+
+    policy = getattr(server, "confirm", "auto")
+    if policy == "never":
+        return False, False
+    if policy == "always":
+        return True, True
+    if read_only and getattr(server, "trust_read_only", True):
+        return False, False
+    writes_auto_approved = not write.CONFIRM_WRITES or write._APPROVE_ALL
+    return (not writes_auto_approved), False
+
+
 def _tool_input_schema(tool: Any) -> dict[str, Any] | None:
     """Devuelve el JSON Schema de una tool MCP (mcp 2.x: input_schema; 1.x: inputSchema)."""
     schema = getattr(tool, "input_schema", None)
     if schema is None:
         schema = getattr(tool, "inputSchema", None)
     return schema
+
+def _ask_confirmation(server_name: str, tool_name: str, forced: bool) -> dict[str, Any] | None:
+    """None si el usuario aprueba; si no, el resultado que se devuelve al modelo."""
+    from ..security import ask, is_interactive
+
+    label = f"{server_name}/{tool_name}"
+    if not is_interactive():
+        return {
+            "error": (
+                f"La tool MCP '{label}' requiere confirmación y no hay terminal interactiva. "
+                "El usuario puede ajustar mcp_servers[].confirm en ~/.klaus/config.yaml."
+            )
+        }
+    note = " [dim](confirm: always)[/dim]" if forced else ""
+    console.print(f"[yellow]🔌 Tool MCP con posibles efectos:[/yellow] [bold]{label}[/bold]{note}")
+    if ask("¿Ejecutar esta tool MCP?"):
+        return None
+    return {"status": "cancelled", "tool": label}
+
 
 class MCPRegistry:
     """Gestiona servidores MCP: conexión, discovery de tools y dispatch."""
@@ -72,10 +126,12 @@ class MCPRegistry:
                 count = 0
                 for tool in tools_result.tools:
                     schema_name = f"mcp_{server.name}_{tool.name}"
+                    read_only = _tool_read_only(tool)
                     self.schemas.append({
                         "name": schema_name,
                         "description": (
-                            f"[MCP:{server.name}] {tool.description or tool.name}"
+                            f"[MCP:{server.name}{' · solo lectura' if read_only else ''}] "
+                            f"{tool.description or tool.name}"
                         ),
                         "input_schema": _tool_input_schema(tool) or {
                             "type": "object",
@@ -83,7 +139,9 @@ class MCPRegistry:
                             "required": [],
                         },
                     })
-                    self.handlers[schema_name] = self._make_handler(server.name, tool.name)
+                    self.handlers[schema_name] = self._make_handler(
+                        server.name, tool.name, server=server, read_only=read_only
+                    )
                     count += 1
 
                 console.print(
@@ -95,7 +153,13 @@ class MCPRegistry:
                     f"[yellow]⚠️  MCP '{server.name}' no disponible: {exc}[/yellow]"
                 )
 
-    def _make_handler(self, server_name: str, tool_name: str) -> Callable[..., Any]:
+    def _make_handler(
+        self,
+        server_name: str,
+        tool_name: str,
+        server: Any = None,
+        read_only: bool = False,
+    ) -> Callable[..., Any]:
         """Devuelve un handler async que proxea la llamada al servidor MCP."""
 
         async def handler(**kwargs: Any) -> dict[str, Any]:
@@ -105,6 +169,12 @@ class MCPRegistry:
             session = self._sessions.get(server_name)
             if not session:
                 return {"error": f"MCP server '{server_name}' no disponible"}
+
+            confirm, forced = needs_confirmation(server, read_only)
+            if confirm:
+                denied = _ask_confirmation(server_name, tool_name, forced)
+                if denied is not None:
+                    return denied
 
             try:
                 result = await session.call_tool(tool_name, arguments=kwargs)
