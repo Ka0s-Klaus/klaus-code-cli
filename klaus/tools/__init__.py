@@ -416,7 +416,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "memory_write",
         "description": (
-            "Crea o actualiza una memoria persistente en ~/.Klaus/memory/. "
+            "Crea o actualiza una memoria persistente en ~/.klaus/memory/. "
             "Las memorias se inyectan en el system prompt de sesiones futuras."
         ),
         "input_schema": {
@@ -446,7 +446,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "memory_read",
         "description": (
-            "Lee memorias persistentes de ~/.Klaus/memory/. "
+            "Lee memorias persistentes de ~/.klaus/memory/. "
             "Filtra por query (búsqueda en nombre/contenido) y/o tipo."
         ),
         "input_schema": {

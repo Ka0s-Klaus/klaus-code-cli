@@ -1,6 +1,6 @@
 """Sistema de memoria persistente entre sesiones.
 
-Las memorias se almacenan en ~/.Klaus/memory/ como ficheros Markdown
+Las memorias se almacenan en ~/.klaus/memory/ como ficheros Markdown
 con frontmatter YAML. Un fichero índice MEMORY.md lista todas las memorias.
 
 Integración con el sistema K* de memoria existente en ~/.claude/projects/.
@@ -16,11 +16,13 @@ from typing import Any, Literal
 from rich.console import Console
 from rich.table import Table
 
+from ..compat import klaus_home
+
 console = Console()
 
 MemoryType = Literal["user", "feedback", "project", "reference"]
 
-_MEMORY_DIR = Path.home() / ".Klaus" / "memory"
+_MEMORY_DIR = klaus_home() / "memory"
 _INDEX_FILE = "MEMORY.md"
 _MAX_INDEX_LINES = 200
 
@@ -217,7 +219,7 @@ def print_memory_list() -> None:
     memories = _load_all(mdir)
 
     if not memories:
-        console.print("[dim]🧠 No hay memorias guardadas en ~/.Klaus/memory/[/dim]")
+        console.print("[dim]🧠 No hay memorias guardadas en ~/.klaus/memory/[/dim]")
         return
 
     table = Table(show_header=True, box=None, padding=(0, 1))

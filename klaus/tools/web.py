@@ -12,7 +12,9 @@ from typing import Any
 
 import httpx
 
-_USER_AGENT = "Mozilla/5.0 (compatible; Klaus-code-cli/1.0)"
+from .. import __version__
+
+_USER_AGENT = f"Mozilla/5.0 (compatible; klaus/{__version__})"
 _FETCH_TIMEOUT = 30
 _MAX_CONTENT_CHARS = 50_000
 

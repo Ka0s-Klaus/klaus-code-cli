@@ -27,7 +27,7 @@ def test_with_claude_md_prepends_cwd(tmp_path: Path) -> None:
 
 
 def test_with_klaus_md_takes_priority(tmp_path: Path) -> None:
-    """Klaus.md tiene prioridad sobre CLAUDE.md."""
+    """KLAUS.md tiene prioridad sobre CLAUDE.md."""
     (tmp_path / "CLAUDE.md").write_text("claude content", encoding="utf-8")
     (tmp_path / "KLAUS.md").write_text("Klaus content", encoding="utf-8")
 

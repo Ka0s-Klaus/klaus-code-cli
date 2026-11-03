@@ -1,8 +1,8 @@
 """Sistema de hooks de Klaus — Pre/PostToolUse, Stop, Notification.
 
 Los hooks son scripts ejecutables almacenados en:
-  - ~/.Klaus/hooks/<EventName>         (globales)
-  - .Klaus/hooks/<EventName>           (proyecto)
+  - ~/.klaus/hooks/<EventName>         (globales)
+  - .klaus/hooks/<EventName>           (proyecto)
 
 Los hooks de proyecto tienen prioridad sobre los globales.
 
@@ -42,6 +42,8 @@ from typing import Any
 
 from rich.console import Console
 
+from .compat import klaus_home, project_klaus_dir
+
 console = Console()
 
 # Nombres canónicos de eventos
@@ -52,8 +54,8 @@ class HookRunner:
     """Busca y ejecuta hooks para los eventos del ciclo de vida del agente."""
 
     def __init__(self, project_root: Path | None = None) -> None:
-        self._global_dir = Path.home() / ".Klaus" / "hooks"
-        self._project_dir = (project_root / ".Klaus" / "hooks") if project_root else None
+        self._global_dir = klaus_home() / "hooks"
+        self._project_dir = (project_klaus_dir(project_root) / "hooks") if project_root else None
 
     def _project_dir_has_hooks(self) -> bool:
         d = self._project_dir
