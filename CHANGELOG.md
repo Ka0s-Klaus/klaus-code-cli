@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Fix: pseudonymizer en todos los caminos hacia el modelo
+
+### Fixed
+- `klaus/pseudonymizer_config.py`: los modelos LiteLLM externos (`openai/gpt-4o`, `anthropic/...`) se trataban como locales por contener `/` y no se seudonimizaban. Ahora solo es local lo que coincide con `pseudonymizer.local_models`
+- `klaus/repl.py`: `klaus repl` nunca configuraba el pseudonymizer. Ahora lo hace al arrancar y en cada `/model`
+- `klaus/tools/subagent.py`: `spawn_agent(model=...)` configura el pseudonymizer para el modelo del sub-agente
+- `klaus/agent.py`: la configuración se **espera** antes de la primera petición (antes era fire-and-forget, con riesgo de carrera y de que el GC eliminara la tarea)
+- Con `base_url` apuntando a la API pública de un proveedor, ya **no se envían** ruta, home y username al endpoint `/pseudonymizer/config` de ese tercero
+
+### Added
+- `klaus/config.py`: sección `pseudonymizer` (`enabled`, `required`, `local_models`, `timeout_seconds`)
+- `pseudonymizer.required: true`: aborta si no se puede garantizar la seudonimización
+- `tests/test_pseudonymizer_config.py`: 42 tests (heurística, timeout, caché, required, y los caminos run / repl / `/model` / `spawn_agent`)
+- `docs/configuration.md`: sección 🔒 `pseudonymizer`, con matriz de comportamiento ante fallos y recomendación para despliegues con cliente
+
+**Files:** `klaus/pseudonymizer_config.py`, `klaus/config.py`, `klaus/agent.py`, `klaus/repl.py`, `klaus/tools/subagent.py`, `tests/`, `docs/configuration.md`, `CHANGELOG.md`
+**Issue:** [#55](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/55)
+
+---
+
 ## [Unreleased] — Fix: CI verde en main
 
 ### Fixed
