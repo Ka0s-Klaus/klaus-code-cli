@@ -11,18 +11,19 @@ Limitaciones de seguridad:
 
 from __future__ import annotations
 
-import asyncio
+import contextvars
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.panel import Panel
 
+if TYPE_CHECKING:
+    from ..config import KlausConfig
+
 console = Console()
 
 # Profundidad actual de anidamiento (thread-local vía contextvars)
-import contextvars
-
 _current_depth: contextvars.ContextVar[int] = contextvars.ContextVar("agent_depth", default=0)
 
 
@@ -47,7 +48,7 @@ async def spawn_agent(
         Dict con "result" (texto de respuesta) y metadatos de ejecución.
     """
     # Import aquí para evitar importaciones circulares
-    from ..config import KlausConfig, load_config
+    from ..config import load_config
 
     depth = _current_depth.get()
     config = load_config()
@@ -116,7 +117,7 @@ async def spawn_agent(
 
 async def _run_subagent(
     prompt: str,
-    config: "KlausConfig",
+    config: KlausConfig,
     cwd: Path,
     collected_text: list[str],
     sub_schemas: list[dict[str, Any]] | None,

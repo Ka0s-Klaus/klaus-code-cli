@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -22,7 +23,7 @@ SAMPLE_MESSAGES = [
 
 class TestSaveCheckpoint:
     def test_creates_json_file(self, storage_path: str) -> None:
-        from Klaus.sessions import save_checkpoint
+        from klaus.sessions import save_checkpoint
 
         result = save_checkpoint(storage_path, "session-abc", SAMPLE_MESSAGES)
 
@@ -31,7 +32,7 @@ class TestSaveCheckpoint:
         assert Path(result["path"]).exists()
 
     def test_checkpoint_contains_messages(self, storage_path: str) -> None:
-        from Klaus.sessions import save_checkpoint
+        from klaus.sessions import save_checkpoint
 
         result = save_checkpoint(storage_path, "session-abc", SAMPLE_MESSAGES)
         data = json.loads(Path(result["path"]).read_text())
@@ -40,7 +41,7 @@ class TestSaveCheckpoint:
         assert data["session_id"] == "session-abc"
 
     def test_checkpoint_with_name(self, storage_path: str) -> None:
-        from Klaus.sessions import save_checkpoint
+        from klaus.sessions import save_checkpoint
 
         result = save_checkpoint(storage_path, "session-abc", SAMPLE_MESSAGES, name="pre-refactor")
 
@@ -48,7 +49,7 @@ class TestSaveCheckpoint:
         assert result["name"] == "pre-refactor"
 
     def test_checkpoint_without_name(self, storage_path: str) -> None:
-        from Klaus.sessions import save_checkpoint
+        from klaus.sessions import save_checkpoint
 
         result = save_checkpoint(storage_path, "session-abc", SAMPLE_MESSAGES)
 
@@ -56,7 +57,8 @@ class TestSaveCheckpoint:
 
     def test_multiple_checkpoints_different_ids(self, storage_path: str) -> None:
         import time
-        from Klaus.sessions import save_checkpoint
+
+        from klaus.sessions import save_checkpoint
 
         cp1 = save_checkpoint(storage_path, "session-abc", SAMPLE_MESSAGES, name="v1")
         time.sleep(0.01)  # asegurar timestamp diferente
@@ -67,14 +69,15 @@ class TestSaveCheckpoint:
 
 class TestListCheckpoints:
     def test_empty_session(self, storage_path: str) -> None:
-        from Klaus.sessions import list_checkpoints
+        from klaus.sessions import list_checkpoints
 
         result = list_checkpoints(storage_path, "session-nothing")
         assert result == []
 
     def test_lists_created_checkpoints(self, storage_path: str) -> None:
         import time
-        from Klaus.sessions import list_checkpoints, save_checkpoint
+
+        from klaus.sessions import list_checkpoints, save_checkpoint
 
         save_checkpoint(storage_path, "session-list", SAMPLE_MESSAGES, name="ckpt-a")
         time.sleep(0.01)
@@ -85,7 +88,7 @@ class TestListCheckpoints:
         assert len(result) == 2
 
     def test_only_lists_session_checkpoints(self, storage_path: str) -> None:
-        from Klaus.sessions import list_checkpoints, save_checkpoint
+        from klaus.sessions import list_checkpoints, save_checkpoint
 
         save_checkpoint(storage_path, "session-X", SAMPLE_MESSAGES)
         save_checkpoint(storage_path, "session-Y", SAMPLE_MESSAGES)
@@ -97,7 +100,7 @@ class TestListCheckpoints:
         assert len(result_y) == 1
 
     def test_checkpoint_metadata(self, storage_path: str) -> None:
-        from Klaus.sessions import list_checkpoints, save_checkpoint
+        from klaus.sessions import list_checkpoints, save_checkpoint
 
         save_checkpoint(storage_path, "session-meta", SAMPLE_MESSAGES, name="meta-test")
         results = list_checkpoints(storage_path, "session-meta")
@@ -112,7 +115,7 @@ class TestListCheckpoints:
 
 class TestLoadCheckpoint:
     def test_load_existing(self, storage_path: str) -> None:
-        from Klaus.sessions import load_checkpoint, save_checkpoint
+        from klaus.sessions import load_checkpoint, save_checkpoint
 
         saved = save_checkpoint(storage_path, "session-load", SAMPLE_MESSAGES, name="to-load")
         loaded = load_checkpoint(storage_path, saved["checkpoint_id"])
@@ -121,15 +124,15 @@ class TestLoadCheckpoint:
         assert loaded == SAMPLE_MESSAGES
 
     def test_load_nonexistent(self, storage_path: str) -> None:
-        from Klaus.sessions import load_checkpoint
+        from klaus.sessions import load_checkpoint
 
         result = load_checkpoint(storage_path, "nonexistent-checkpoint-id")
         assert result is None
 
     def test_roundtrip(self, storage_path: str) -> None:
-        from Klaus.sessions import load_checkpoint, save_checkpoint
+        from klaus.sessions import load_checkpoint, save_checkpoint
 
-        original = [
+        original: list[dict[str, Any]] = [
             {"role": "user", "content": "test"},
             {"role": "assistant", "content": [{"type": "text", "text": "respuesta"}]},
         ]

@@ -1,4 +1,4 @@
-"""Tests para Klaus.tools.web — web_fetch y web_search."""
+"""Tests para klaus.tools.web — web_fetch y web_search."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def cwd(tmp_path: Path) -> Path:
 class TestWebFetch:
     @pytest.mark.asyncio
     async def test_fetch_returns_content(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_fetch
+        from klaus.tools.web import web_fetch
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -39,7 +39,7 @@ class TestWebFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_invalid_url(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_fetch
+        from klaus.tools.web import web_fetch
 
         result = await web_fetch(url="not-a-url", cwd=cwd)
         assert "error" in result
@@ -47,7 +47,8 @@ class TestWebFetch:
     @pytest.mark.asyncio
     async def test_fetch_http_error(self, cwd: Path) -> None:
         import httpx
-        from Klaus.tools.web import web_fetch
+
+        from klaus.tools.web import web_fetch
 
         with patch("httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
@@ -66,7 +67,7 @@ class TestWebFetch:
 
     @pytest.mark.asyncio
     async def test_fetch_json_content(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_fetch
+        from klaus.tools.web import web_fetch
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -90,7 +91,7 @@ class TestWebFetch:
 class TestWebSearch:
     @pytest.mark.asyncio
     async def test_search_returns_results(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_search
+        from klaus.tools.web import web_search
 
         ddg_response = MagicMock()
         ddg_response.status_code = 200
@@ -119,7 +120,7 @@ class TestWebSearch:
 
     @pytest.mark.asyncio
     async def test_search_empty_query(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_search
+        from klaus.tools.web import web_search
 
         result = await web_search(query="", cwd=cwd)
         # Query vacía: puede devolver error o lista vacía; no debe crashear
@@ -127,7 +128,7 @@ class TestWebSearch:
 
     @pytest.mark.asyncio
     async def test_search_respects_max_results(self, cwd: Path) -> None:
-        from Klaus.tools.web import web_search
+        from klaus.tools.web import web_search
 
         ddg_response = MagicMock()
         ddg_response.status_code = 200

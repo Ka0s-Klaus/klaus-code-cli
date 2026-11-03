@@ -24,3 +24,10 @@ def disable_confirmations():
     wm.CONFIRM_WRITES = orig_write
     bm.CONFIRM_BASH = orig_bash
     wm._APPROVE_ALL = orig_approve
+
+
+@pytest.fixture(autouse=True)
+def isolate_env(monkeypatch):
+    """Aísla los tests de variables KLAUDE_* presentes en el entorno del desarrollador."""
+    for var in ("KLAUDE_PROXY_URL", "KLAUDE_MODEL", "KLAUDE_API_FORMAT", "KLAUDE_API_KEY"):
+        monkeypatch.delenv(var, raising=False)

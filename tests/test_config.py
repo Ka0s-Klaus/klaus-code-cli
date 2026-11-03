@@ -15,7 +15,7 @@ def test_default_config():
 
 
 def test_config_api_key_from_env(monkeypatch):
-    monkeypatch.setenv("KLAUS_API_KEY", "test-key-123")
+    monkeypatch.setenv("KLAUDE_API_KEY", "test-key-123")
     cfg = KlausConfig()
     assert cfg.api_key == "test-key-123"
 
@@ -31,7 +31,7 @@ def test_load_config_no_file(tmp_path, monkeypatch):
 def test_load_config_env_override(monkeypatch, tmp_path):
     import klaus.config as cm
     monkeypatch.setattr(cm, "CONFIG_PATH", tmp_path / "nonexistent.yaml")
-    monkeypatch.setenv("KLAUS_MODEL", "gpt-4o")
+    monkeypatch.setenv("KLAUDE_MODEL", "gpt-4o")
     cfg = load_config()
     assert cfg.provider.model == "gpt-4o"
 

@@ -276,7 +276,6 @@ def save_checkpoint(
 
 def list_checkpoints(storage_path: str, session_id: str) -> list[dict[str, Any]]:
     """Lista todos los checkpoints de una sesión."""
-    from datetime import datetime
 
     session_dir = _session_dir(storage_path)
     checkpoints = []

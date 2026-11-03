@@ -1,4 +1,4 @@
-"""Tests para Klaus.tools.memory — memory_write y memory_read."""
+"""Tests para klaus.tools.memory — memory_write y memory_read."""
 
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ def memory_dir(tmp_path: Path) -> Path:
 @pytest.fixture(autouse=True)
 def patch_memory_dir(memory_dir: Path):
     """Redirige el directorio de memorias a un directorio temporal."""
-    with patch("Klaus.tools.memory._MEMORY_DIR", memory_dir):
+    with patch("klaus.tools.memory._MEMORY_DIR", memory_dir):
         yield
 
 
 class TestMemoryWrite:
     @pytest.mark.asyncio
     async def test_write_creates_file(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         result = await memory_write(
             name="test-memory",
@@ -41,7 +41,7 @@ class TestMemoryWrite:
 
     @pytest.mark.asyncio
     async def test_write_updates_existing(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         await memory_write(name="update-test", content="Versión 1")
         result = await memory_write(name="update-test", content="Versión 2")
@@ -50,7 +50,7 @@ class TestMemoryWrite:
 
     @pytest.mark.asyncio
     async def test_write_creates_index(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         await memory_write(name="indexed-mem", content="Contenido", description="Desc corta")
 
@@ -61,7 +61,7 @@ class TestMemoryWrite:
 
     @pytest.mark.asyncio
     async def test_write_slugifies_name(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         result = await memory_write(name="Mi Memoria Con Espacios", content="test")
         assert "-" in result["name"]
@@ -69,14 +69,14 @@ class TestMemoryWrite:
 
     @pytest.mark.asyncio
     async def test_write_empty_name_returns_error(self) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         result = await memory_write(name="", content="contenido")
         assert "error" in result
 
     @pytest.mark.asyncio
     async def test_write_frontmatter_format(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_write
+        from klaus.tools.memory import memory_write
 
         await memory_write(
             name="frontmatter-test",
@@ -95,7 +95,7 @@ class TestMemoryWrite:
 class TestMemoryRead:
     @pytest.mark.asyncio
     async def test_read_all_when_empty(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_read
+        from klaus.tools.memory import memory_read
 
         result = await memory_read()
         assert result["count"] == 0
@@ -103,7 +103,7 @@ class TestMemoryRead:
 
     @pytest.mark.asyncio
     async def test_read_after_write(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_read, memory_write
+        from klaus.tools.memory import memory_read, memory_write
 
         await memory_write(name="readable", content="Contenido leíble", description="Para leer")
         result = await memory_read()
@@ -113,7 +113,7 @@ class TestMemoryRead:
 
     @pytest.mark.asyncio
     async def test_read_filters_by_query(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_read, memory_write
+        from klaus.tools.memory import memory_read, memory_write
 
         await memory_write(name="python-notes", content="Python notas")
         await memory_write(name="js-notes", content="JavaScript notas")
@@ -124,7 +124,7 @@ class TestMemoryRead:
 
     @pytest.mark.asyncio
     async def test_read_filters_by_type(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_read, memory_write
+        from klaus.tools.memory import memory_read, memory_write
 
         await memory_write(name="user-mem", content="user content", memory_type="user")
         await memory_write(name="proj-mem", content="project content", memory_type="project")
@@ -135,7 +135,7 @@ class TestMemoryRead:
 
     @pytest.mark.asyncio
     async def test_read_skips_index_file(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import memory_read, memory_write
+        from klaus.tools.memory import memory_read, memory_write
 
         await memory_write(name="real-memory", content="contenido real")
         result = await memory_read()
@@ -146,13 +146,13 @@ class TestMemoryRead:
 
 class TestMemoryIndex:
     def test_get_memory_index_content_empty(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import get_memory_index_content
+        from klaus.tools.memory import get_memory_index_content
 
         assert get_memory_index_content() == ""
 
     @pytest.mark.asyncio
     async def test_get_memory_index_content_after_write(self, memory_dir: Path) -> None:
-        from Klaus.tools.memory import get_memory_index_content, memory_write
+        from klaus.tools.memory import get_memory_index_content, memory_write
 
         await memory_write(name="index-test", content="test", description="Descripción índice")
         content = get_memory_index_content()

@@ -1,4 +1,4 @@
-"""Tests para Klaus.tools.todo — todo_write y todo_read."""
+"""Tests para klaus.tools.todo — todo_write y todo_read."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def reset_todos():
     """Limpia el estado global de todos antes y después de cada test."""
-    from Klaus.tools.todo import _set_todos
+    from klaus.tools.todo import _set_todos
     _set_todos([])
     yield
     _set_todos([])
@@ -17,7 +17,7 @@ def reset_todos():
 class TestTodoWrite:
     @pytest.mark.asyncio
     async def test_write_creates_todos(self) -> None:
-        from Klaus.tools.todo import todo_write
+        from klaus.tools.todo import todo_write
 
         todos = [
             {"content": "Implementar feature X", "status": "pending"},
@@ -30,7 +30,7 @@ class TestTodoWrite:
 
     @pytest.mark.asyncio
     async def test_write_replaces_existing(self) -> None:
-        from Klaus.tools.todo import todo_read, todo_write
+        from klaus.tools.todo import todo_read, todo_write
 
         await todo_write(todos=[{"content": "Primera tarea", "status": "pending"}])
         await todo_write(todos=[
@@ -43,7 +43,7 @@ class TestTodoWrite:
 
     @pytest.mark.asyncio
     async def test_write_normalizes_invalid_status(self) -> None:
-        from Klaus.tools.todo import todo_read, todo_write
+        from klaus.tools.todo import todo_read, todo_write
 
         await todo_write(todos=[{"content": "Tarea", "status": "invalid_status"}])
         result = await todo_read()
@@ -51,7 +51,7 @@ class TestTodoWrite:
 
     @pytest.mark.asyncio
     async def test_write_filters_empty_content(self) -> None:
-        from Klaus.tools.todo import todo_read, todo_write
+        from klaus.tools.todo import todo_read, todo_write
 
         await todo_write(todos=[
             {"content": "   ", "status": "pending"},
@@ -62,7 +62,7 @@ class TestTodoWrite:
 
     @pytest.mark.asyncio
     async def test_write_empty_list(self) -> None:
-        from Klaus.tools.todo import todo_write
+        from klaus.tools.todo import todo_write
 
         result = await todo_write(todos=[])
         assert result["count"] == 0
@@ -71,7 +71,7 @@ class TestTodoWrite:
 class TestTodoRead:
     @pytest.mark.asyncio
     async def test_read_initial_empty(self) -> None:
-        from Klaus.tools.todo import todo_read
+        from klaus.tools.todo import todo_read
 
         result = await todo_read()
         assert result["count"] == 0
@@ -79,7 +79,7 @@ class TestTodoRead:
 
     @pytest.mark.asyncio
     async def test_read_counts_by_status(self) -> None:
-        from Klaus.tools.todo import todo_read, todo_write
+        from klaus.tools.todo import todo_read, todo_write
 
         await todo_write(todos=[
             {"content": "A", "status": "pending"},
@@ -95,7 +95,7 @@ class TestTodoRead:
 
     @pytest.mark.asyncio
     async def test_get_todos_for_display(self) -> None:
-        from Klaus.tools.todo import get_todos_for_display, todo_write
+        from klaus.tools.todo import get_todos_for_display, todo_write
 
         await todo_write(todos=[{"content": "Test", "status": "pending"}])
         todos = get_todos_for_display()
