@@ -79,4 +79,4 @@ Los cambios en tools, despacho, hooks o sub-agentes deben respetar el modelo de 
 
 ## 📄 Licencia
 
-Al contribuir aceptas que tu código se publique bajo la licencia MIT del proyecto (declarada en `pyproject.toml`).
+Al contribuir aceptas que tu código se publique bajo la [licencia MIT](LICENSE) del proyecto.

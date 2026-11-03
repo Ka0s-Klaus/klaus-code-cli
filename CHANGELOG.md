@@ -29,7 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `klaus/compat.py`: avisos de obsolescencia para nombres anteriores ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`
-- `docs/roadmap.md`: propuesta de roadmap (agente de código soberano, 4 fases con gates); `roadmap-feature-parity.md` queda como histórico ([#67](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/67))
+- `LICENSE`: MIT, © 2026 Ka0s; `pyproject.toml` lo referencia ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
+- `docs/roadmap.md`: propuesta de roadmap (agente de código soberano, 4 fases con gates); `roadmap-feature-parity.md` queda como histórico ([#67](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/67)); posicionamiento aprobado ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
 - Tests: de 41 a más de 250 (seguridad, pseudonymizer, bucle del agente, compatibilidad)
 
 ### Changed
