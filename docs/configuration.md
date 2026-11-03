@@ -88,7 +88,7 @@ provider:
   api_key_env: "KLAUS_API_KEY"
   api_format: "anthropic"                # Formato de API: "anthropic" | "openai"
   model: "claude-haiku-4-5-20251001"     # Modelo por defecto
-  max_tokens: 4096                       # Máximo de tokens en la respuesta
+  max_tokens: 16000                      # Máximo de tokens por respuesta, razonamiento incluido
   temperature: 0.2                       # Temperatura (0.0–1.0)
 ```
 

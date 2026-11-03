@@ -74,7 +74,7 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
     - 30–50 tareas reales y reproducibles: corregir un bug, añadir un test, refactorizar, navegar un repo desconocido, tareas con trampas de seguridad.
     - Cada tarea en un repo fijado, con un comprobador automático (tests que deben pasar, o un diff esperado).
     - Un comando `klaus eval --model <m>` que ejecuta la batería y saca una tabla: tasa de éxito, turnos, tokens, coste y tiempo.
-    - Baseline en al menos 2 modelos: uno externo (vía klaude-proxy) y uno local.
+    - Baseline en Claude Opus 5.5, Sonnet 5.5 y Haiku 5.5 (vía klaude-proxy) y llama3.3 en local (Ollama): [procedimiento](evaluation.md#-baseline-gate-0-del-roadmap).
 2. **Proceso**
     - La protección de `main` **no se activa de momento**: el flujo issue → rama → PR se sigue por convención (`CONTRIBUTING.md`).
     - La batería de evaluación se ejecuta como job semanal y en los PRs que toquen `agent.py`, `tools/` o los prompts.
@@ -175,11 +175,12 @@ Tomadas el 3 de noviembre de 2026 ([#69](https://github.com/Ka0s-Klaus/klaus-cod
 | Protección de `main` | ⏸️ No se activa de momento |
 | Titular del copyright (`LICENSE`) | Ka0s |
 | `--mcp-config` | ✅ Se implementa ([#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70)) |
+| Modelos del baseline (4/11/2026, [#75](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/75)) | Externos: Claude Opus 5.5, Sonnet 5.5 y Haiku 5.5 · Local: llama3.3 (Ollama) |
 
 Pendientes:
 
 - [ ] Confirmar la capacidad del equipo para la Fase 0
-- [ ] Lista corta de modelos para el baseline (1 externo + 1 local)
+- [ ] API key de la Claude Console para el baseline (una suscripción Pro no da acceso a la API)
 - [ ] Cliente candidato para la revisión de seguridad (Gate 1) y el piloto (Fase 3)
 
 ---

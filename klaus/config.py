@@ -21,7 +21,9 @@ class ProviderConfig(BaseModel):
     api_key_env: str = "KLAUS_API_KEY"
     api_format: str = "anthropic"  # "anthropic" | "openai"
     model: str = "claude-haiku-4-5-20251001"
-    max_tokens: int = 4096
+    # Los modelos con razonamiento (p. ej. Opus/Sonnet 5.5) gastan parte de este límite
+    # pensando: con 4096 las respuestas se cortan (#75).
+    max_tokens: int = 16000
     temperature: float = 0.2
 
 
@@ -241,7 +243,7 @@ DEFAULT_CONFIG_YAML = """provider:
   api_key_env: "KLAUS_API_KEY"
   api_format: "anthropic"
   model: "claude-haiku-4-5-20251001"
-  max_tokens: 4096
+  max_tokens: 16000   # incluye el razonamiento de los modelos que piensan
   temperature: 0.2
 
 behavior:

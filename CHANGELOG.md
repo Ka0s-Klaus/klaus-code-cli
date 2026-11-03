@@ -31,10 +31,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`
 - `LICENSE`: MIT, © 2026 Ka0s; `pyproject.toml` lo referencia ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
+- `evals/run_baseline.sh` y procedimiento de baseline en `docs/evaluation.md` (Opus/Sonnet/Haiku 5.5 y llama3.3) ([#75](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/75))
 - `docs/roadmap.md`: propuesta de roadmap (agente de código soberano, 4 fases con gates); `roadmap-feature-parity.md` queda como histórico ([#67](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/67)); posicionamiento aprobado ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
 - Tests: de 41 a más de 250 (seguridad, pseudonymizer, bucle del agente, compatibilidad)
 
 ### Changed
+- `provider.max_tokens` por defecto: 4096 → 16000. Los modelos con razonamiento (Opus/Sonnet 5.5) consumen ese límite pensando y cortaban las respuestas ([#75](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/75))
 - **Nombres unificados en `klaus`** ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58)): `~/.klaus/`, `<proyecto>/.klaus/`, variables `KLAUS_*`, clave `context.max_klaus_md_tokens`, comando `klaus` en toda la documentación
 - `klaus init --scan` genera `KLAUS.md` (antes `CLAUS.md`, que el contexto **no cargaba**) ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Versión con fuente única en `pyproject.toml` (`0.15.0`); `klaus.__version__` se lee de los metadatos ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
