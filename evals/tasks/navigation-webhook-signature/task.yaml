@@ -1,0 +1,15 @@
+id: navigation-webhook-signature
+title: Encontrar la función que valida la firma de los webhooks
+category: navigation
+prompt: |
+  ¿Qué función valida la firma de los webhooks entrantes y en qué fichero está?
+  No modifiques nada.
+max_turns: 12
+reference_answer: "La valida verify_signature, en security/hmac_utils.py."
+checks:
+  - type: answer_regex
+    pattern: 'verify_signature'
+  - type: answer_regex
+    pattern: 'security/hmac_utils\.py'
+  - type: command
+    run: "git diff --quiet HEAD"

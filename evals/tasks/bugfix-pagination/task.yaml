@@ -1,0 +1,10 @@
+id: bugfix-pagination
+title: Corregir la paginación (desfase y última página)
+category: bugfix
+prompt: |
+  Los tests de paginación fallan y hay usuarios que reportan que la última página
+  de resultados nunca aparece. Corrige pagination.py.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} -m pytest -q"

@@ -1,0 +1,8 @@
+[project]
+name = "toolkit"
+version = "0.1.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: tests lentos; ejecútalos con -m slow"]
+addopts = "-m 'not slow'"

@@ -1,0 +1,10 @@
+id: feature-cli-json
+title: Añadir salida JSON a una CLI
+category: feature
+prompt: |
+  Añade a wc.py una opción --json que imprima el resultado como un objeto JSON con las
+  claves lines, words, chars y path. Sin --json, la salida debe seguir siendo la misma.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} -m pytest -q"

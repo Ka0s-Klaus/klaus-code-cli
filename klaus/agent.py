@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -37,11 +38,34 @@ _PLAN_MODE_SYSTEM = (
 )
 
 
+@dataclass
+class RunStats:
+    """Métricas de una ejecución del agente (usadas por ``klaus eval``, #71)."""
+
+    turns: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    context_tokens: int = 0
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    texts: list[str] = field(default_factory=list)
+    stop_reason: str = ""
+    error: str | None = None
+
+    @property
+    def final_text(self) -> str:
+        return "\n\n".join(self.texts)
+
+    def record_tool(self, name: str, args: dict[str, Any], result: Any) -> None:
+        error = result.get("error") if isinstance(result, dict) else None
+        self.tool_calls.append({"name": name, "input": args, "error": error})
+
+
 async def run_agent_loop(
     prompt: str,
     adapter: ProviderAdapter,
     config: KlausConfig,
     project_root: Path | None = None,
+    stats: RunStats | None = None,
 ) -> int:
     """Loop principal del agente.
 
@@ -76,6 +100,9 @@ async def run_agent_loop(
         await ensure_pseudonymizer(config, cwd)
     except PseudonymizerError as e:
         console.print(f"[red]🔒 {e}[/red]")
+        if stats is not None:
+            stats.error = f"pseudonymizer: {e}"
+            stats.stop_reason = "error"
         return 1
 
     try:
@@ -92,6 +119,7 @@ async def run_agent_loop(
             system_prompt=system_prompt,
             active_schemas=active_schemas,
             active_handlers=active_handlers,
+            stats=stats if stats is not None else RunStats(),
         )
     finally:
         await mcp.shutdown()
@@ -105,6 +133,7 @@ async def _agent_loop(
     system_prompt: str | None,
     active_schemas: list[dict[str, Any]],
     active_handlers: dict[str, Any],
+    stats: RunStats,
 ) -> int:
     """Loop interno del agente (desacoplado del lifecycle MCP)."""
     messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
@@ -139,15 +168,21 @@ async def _agent_loop(
                 )
         except Exception as e:
             console.print(f"[red]Error de red (turno {turn + 1}):[/red] {e}")
+            stats.error = f"network: {e}"
+            stats.stop_reason = "error"
             return 1
 
         # Tracking de tokens reales
         usage = adapter.extract_usage(response)
         total_input_tokens += usage["input_tokens"]
         total_output_tokens += usage["output_tokens"]
+        stats.turns = turn + 1
+        stats.input_tokens = total_input_tokens
+        stats.output_tokens = total_output_tokens
 
         if usage["input_tokens"] > 0:
             context_tokens = usage["input_tokens"]
+            stats.context_tokens = context_tokens
             console.print(
                 context_usage_line(
                     context_tokens,
@@ -163,6 +198,8 @@ async def _agent_loop(
 
         if text:
             console.print(Markdown(text))
+            stats.texts.append(text)
+        stats.stop_reason = stop
 
         if stop == "end_turn" or not tool_calls:
             return 0
@@ -175,10 +212,11 @@ async def _agent_loop(
                 result = await _dispatch_tool(
                     tc, config, cwd, active_handlers, schemas=active_schemas
                 )
+                stats.record_tool(tc.get("name", ""), tc.get("input", {}) or {}, result)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tc["id"],
-                    "content": json.dumps(result, ensure_ascii=False),
+                    "content": json.dumps(result, ensure_ascii=False, default=str),
                 })
 
             messages.append({"role": "user", "content": tool_results})
@@ -202,6 +240,7 @@ async def _agent_loop(
         return 0
 
     console.print(f"[yellow]⚠️  Límite de {max_turns} turnos alcanzado[/yellow]")
+    stats.stop_reason = "max_turns"
     return 0
 
 

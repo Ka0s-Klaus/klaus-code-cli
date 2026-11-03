@@ -1,0 +1,14 @@
+id: feature-user-email
+title: Añadir un campo validado a un modelo y su serialización
+category: feature
+prompt: |
+  Añade un campo obligatorio `email` a la clase User de models.py. User.validate() debe
+  lanzar ValueError si el email no contiene exactamente una "@" o si el dominio no tiene
+  un punto. Inclúyelo también en serializers.to_dict y serializers.from_dict, y adapta
+  los tests existentes.
+max_turns: 20
+checks:
+  - type: command
+    run: "{python} -m pytest -q tests/test_user_email_hidden.py"
+  - type: command
+    run: "{python} -m pytest -q"

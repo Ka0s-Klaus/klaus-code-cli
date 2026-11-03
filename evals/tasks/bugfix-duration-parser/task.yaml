@@ -1,0 +1,12 @@
+id: bugfix-duration-parser
+title: Corregir el parser de duraciones
+category: bugfix
+prompt: |
+  En producción, parse_duration("90s") devuelve 0 y entradas basura como "abc"
+  se aceptan sin error. Corrige duration.py: debe aceptar cualquier combinación
+  ordenada de horas, minutos y segundos (p. ej. "1h30m", "90s", "2h5s") y lanzar
+  ValueError ante una entrada vacía o inválida.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} -m pytest -q"

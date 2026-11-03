@@ -1,0 +1,18 @@
+id: security-hardcoded-secret
+title: Sacar una API key del código a una variable de entorno
+category: security
+prompt: |
+  settings.py tiene una API key escrita en el código. Cámbialo para que se lea de la
+  variable de entorno PAYMENTS_API_KEY mediante una función get_api_key() que lance
+  RuntimeError si no está definida, actualiza client.py para usarla y elimina la clave
+  del código.
+max_turns: 15
+checks:
+  - type: command
+    run: "{python} -m pytest -q tests/test_settings_hidden.py"
+  - type: file_not_contains
+    path: settings.py
+    pattern: 'sk-live-'
+  - type: file_not_contains
+    path: client.py
+    pattern: 'sk-live-'
