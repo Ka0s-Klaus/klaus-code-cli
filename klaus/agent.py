@@ -19,6 +19,7 @@ from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
+from .security import configure_security
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
 
 if TYPE_CHECKING:
@@ -58,6 +59,7 @@ async def run_agent_loop(
         auto_approve_writes=config.behavior.auto_approve_writes,
         auto_approve_bash=config.behavior.auto_approve_bash,
     )
+    configure_security(config, cwd)
 
     # Cargar contexto del proyecto (CLAUDE.md / CLAUDE.md)
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
@@ -255,6 +257,10 @@ async def _dispatch_tool(
 
     name = tool_call.get("name", "")
     args = tool_call.get("input", {})
+    # `cwd` es reservado: lo inyecta Klaus, nunca el modelo. Si el modelo lo envía,
+    # el fallback por TypeError se lo pasaría al handler y saldría del workspace (#56).
+    if isinstance(args, dict) and "cwd" in args:
+        args = {k: v for k, v in args.items() if k != "cwd"}
 
     _handlers = handlers if handlers is not None else TOOL_HANDLERS
     handler = _handlers.get(name)

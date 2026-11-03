@@ -5,7 +5,11 @@ El resultado (último texto generado) se devuelve al padre como string.
 
 Limitaciones de seguridad:
   - Máximo de profundidad configurable (max_agent_depth en BehaviorConfig).
-  - Los sub-agentes NO heredan hooks del padre.
+  - Heredan las confirmaciones del padre: un sub-agente NO puede aprobar
+    escrituras ni bash que el padre no aprobaría (#56).
+  - Sus tools pasan por _dispatch_tool: validación de parámetros y hooks
+    PreToolUse/PostToolUse, igual que en el padre (#56).
+  - cwd debe estar dentro del workspace.
   - Los sub-agentes NO guardan sesión en disco.
 """
 
@@ -75,8 +79,8 @@ async def spawn_agent(
     sub_config = load_config(model_override=model)
     if max_turns is not None:
         sub_config.behavior.max_agent_turns = max_turns
-    sub_config.behavior.auto_approve_writes = True
-    sub_config.behavior.auto_approve_bash = True
+    # No se fuerza auto-aprobación: el sub-agente hereda el estado de confirmaciones
+    # del padre (módulos write/bash). Forzarlo permitía saltárselas delegando (#56).
     sub_config.session.persist = False  # sub-agentes no guardan sesión
 
     # Filtrar tools si se especificó lista
@@ -88,11 +92,19 @@ async def spawn_agent(
         sub_schemas = [s for s in TOOL_SCHEMAS if s["name"] in tools]
         sub_handlers = {k: v for k, v in TOOL_HANDLERS.items() if k in tools}
 
+    # cwd elegido por el modelo → debe estar dentro del workspace (#56)
+    from ..security import WorkspaceError, resolve_path
+
+    try:
+        sub_cwd = resolve_path(str(cwd), None, "spawn_agent") if cwd else Path.cwd()
+    except WorkspaceError as e:
+        return {"error": str(e)}
+
     # Pseudonymizer: el sub-agente puede usar otro modelo (externo) que el padre (#55)
     from ..pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
 
     try:
-        await ensure_pseudonymizer(sub_config, cwd or Path.cwd())
+        await ensure_pseudonymizer(sub_config, sub_cwd)
     except PseudonymizerError as e:
         return {"error": str(e)}
 
@@ -104,7 +116,7 @@ async def spawn_agent(
         result = await _run_subagent(
             prompt=prompt,
             config=sub_config,
-            cwd=cwd or Path.cwd(),
+            cwd=sub_cwd,
             collected_text=collected_text,
             sub_schemas=sub_schemas,
             sub_handlers=sub_handlers,
@@ -134,11 +146,10 @@ async def _run_subagent(
     """Ejecuta el loop del sub-agente capturando el output de texto."""
     import json
 
+    from ..agent import _dispatch_tool
     from ..context import load_project_context
     from ..provider.base import ProviderAdapter
-    from ..tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
-
-    configure_confirmations(auto_approve_writes=True, auto_approve_bash=True)
+    from ..tools import TOOL_HANDLERS, TOOL_SCHEMAS
 
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
@@ -186,18 +197,8 @@ async def _run_subagent(
                 messages.append({"role": "assistant", "content": response["content"]})
                 tool_results: list[dict[str, Any]] = []
                 for tc in tool_calls:
-                    name = tc.get("name", "")
-                    args = tc.get("input", {})
-                    handler = active_handlers.get(name)
-                    if not handler:
-                        res: Any = {"error": f"Tool desconocida: {name}"}
-                    else:
-                        try:
-                            res = await handler(**args, cwd=cwd)
-                        except TypeError:
-                            res = await handler(**args)
-                        except Exception as exc:
-                            res = {"error": str(exc)}
+                    # Mismo camino que el padre: validación + hooks Pre/PostToolUse (#56)
+                    res = await _dispatch_tool(tc, config, cwd, active_handlers)
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tc["id"],

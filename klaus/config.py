@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -65,6 +65,19 @@ class PseudonymizerConfig(BaseModel):
     timeout_seconds: float = 2.0
 
 
+class SecurityConfig(BaseModel):
+    """Límites del agente. Ver docs/security.md."""
+
+    # Directorios extra (además del proyecto) a los que las tools de ficheros pueden acceder.
+    allowed_paths: list[str] = Field(default_factory=list)
+    # Acceso fuera del workspace: "ask" pregunta (también en YOLO; sin TTY se deniega), "deny" siempre deniega.
+    outside_workspace: Literal["ask", "deny"] = "ask"
+    # Hooks en <proyecto>/.Klaus/hooks: "ask" pide confianza (por hash), "trust" siempre, "never" nunca.
+    project_hooks: Literal["ask", "trust", "never"] = "ask"
+    # Si no está vacía y run_bash está auto-aprobado, solo estos prefijos se ejecutan sin preguntar.
+    bash_allowlist: list[str] = Field(default_factory=list)
+
+
 class MCPServerConfig(BaseModel):
     """Configuración de un servidor MCP externo."""
 
@@ -80,6 +93,7 @@ class KlausConfig(BaseModel):
     context: ContextConfig = Field(default_factory=ContextConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
     pseudonymizer: PseudonymizerConfig = Field(default_factory=PseudonymizerConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
 
     @property
@@ -160,6 +174,17 @@ pseudonymizer:
   # Solo estos modelos (glob) se consideran locales; el resto se trata como externo.
   local_models: ["kdev*", "ollama/*", "ollama_chat/*"]
   timeout_seconds: 2.0
+
+security:
+  # Directorios extra (además del proyecto) accesibles por las tools de ficheros.
+  allowed_paths: []
+  # Fuera del workspace: "ask" (pregunta incluso en --yolo; sin TTY deniega) | "deny".
+  outside_workspace: "ask"
+  # Hooks de <proyecto>/.Klaus/hooks: "ask" (confianza por hash) | "trust" | "never".
+  project_hooks: "ask"
+  # Con run_bash auto-aprobado, solo estos prefijos corren sin preguntar (vacío = sin filtro).
+  # Ej.: ["pytest", "ruff check", "git status", "git diff"]
+  bash_allowlist: []
 
 # mcp_servers:
 #   - name: filesystem

@@ -7,18 +7,18 @@ from pathlib import Path
 from typing import Any
 
 from ..context import KlausIgnore
+from ..security import guard_workspace, resolve_path
 
 # Límite de líneas por defecto cuando no hay config disponible
 _DEFAULT_MAX_LINES = 2000
 
 
-def _resolve(path: str, cwd: Path | None = None) -> Path:
-    p = Path(path)
-    if not p.is_absolute():
-        p = (cwd or Path.cwd()) / p
-    return p.resolve()
+def _resolve(path: str, cwd: Path | None = None, op: str = "read_file") -> Path:
+    """Resuelve la ruta y verifica que está dentro del workspace (#56)."""
+    return resolve_path(path, cwd, op)
 
 
+@guard_workspace
 async def read_file(
     path: str,
     start_line: int | None = None,
@@ -72,13 +72,14 @@ async def read_file(
     return result
 
 
+@guard_workspace
 async def list_directory(
     path: str = ".",
     recursive: bool = False,
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Lista el contenido de un directorio respetando .klausignore."""
-    target = _resolve(path, cwd)
+    target = _resolve(path, cwd, "list_directory")
 
     if not target.exists():
         return {"error": f"Directorio no encontrado: {path}"}

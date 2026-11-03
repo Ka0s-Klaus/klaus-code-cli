@@ -152,6 +152,7 @@ Klaus-code-cli/
 | [🔌 MCP](docs/mcp.md) | Integración de servidores MCP externos |
 | [🏗️ Architecture](docs/architecture.md) | Arquitectura interna — diagramas y módulos |
 | [🧪 Development](docs/development.md) | Entorno local, checks de CI y convenciones |
+| [🔐 Security](docs/security.md) | Modelo de amenazas, workspace, bash, hooks y sub-agentes |
 
 ---
 

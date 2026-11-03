@@ -84,8 +84,9 @@ sequenceDiagram
 
 ## 🔒 Seguridad
 
-- Las tools MCP pasan por el mismo flujo de confirmación que `write_file` y `run_bash`.
-- Si una tool MCP tiene efectos secundarios (escribe, llama APIs, modifica datos), el agente mostrará la llamada y pedirá confirmación antes de ejecutar (salvo `--yolo`).
+- ⚠️ **Las tools MCP se ejecutan sin confirmación** y **no están confinadas al workspace** de Klaus. El agente muestra la llamada, pero no la detiene. Un servidor como `filesystem` accede a todo lo que se le configure.
+- Configura cada servidor con el **alcance mínimo** (directorios, scopes de token) y evita servidores con efectos secundarios en sesiones `--yolo`.
+- Las tools MCP sí pasan por los hooks PreToolUse/PostToolUse, que pueden bloquearlas. Ver [🔐 Security](security.md).
 - Las credenciales en `env` deben ser variables de entorno, no valores literales. Usar la sintaxis `${VAR}` si el shell expande variables en el config.
 - **Nunca** commitear `mcp.json` o secciones de `config.yaml` que contengan tokens o credenciales.
 

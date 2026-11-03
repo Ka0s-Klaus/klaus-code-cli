@@ -18,6 +18,8 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.syntax import Syntax
 
+from ..security import guard_workspace, resolve_path
+
 console = Console()
 
 # Puesto en False por el futuro modo --yolo / --allow-writes
@@ -26,11 +28,9 @@ CONFIRM_WRITES: bool = True
 _APPROVE_ALL: bool = False
 
 
-def _resolve(path: str, cwd: Path | None) -> Path:
-    p = Path(path)
-    if not p.is_absolute():
-        p = (cwd or Path.cwd()) / p
-    return p.resolve()
+def _resolve(path: str, cwd: Path | None, op: str) -> Path:
+    """Resuelve la ruta y verifica que está dentro del workspace (#56)."""
+    return resolve_path(path, cwd, op)
 
 
 def _unified_diff(old_lines: list[str], new_lines: list[str], fromfile: str, tofile: str) -> str:
@@ -97,13 +97,14 @@ def _confirm(prompt: str, diff_text: str | None = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
+@guard_workspace
 async def write_file(
     path: str,
     content: str,
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Crea o sobreescribe un fichero con confirmación y diff/preview."""
-    target = _resolve(path, cwd)
+    target = _resolve(path, cwd, "write_file")
 
     if target.exists() and not target.is_file():
         return {"error": f"La ruta existe y no es un fichero: {path}"}
@@ -154,6 +155,7 @@ async def write_file(
 # ---------------------------------------------------------------------------
 
 
+@guard_workspace
 async def edit_file(
     path: str,
     old_string: str,
@@ -162,7 +164,7 @@ async def edit_file(
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Edita un fichero reemplazando old_string por new_string, con diff y confirmación."""
-    target = _resolve(path, cwd)
+    target = _resolve(path, cwd, "edit_file")
 
     if not target.exists():
         return {"error": f"Fichero no encontrado: {path}"}
@@ -209,12 +211,13 @@ async def edit_file(
 # ---------------------------------------------------------------------------
 
 
+@guard_workspace
 async def delete_file(
     path: str,
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Elimina un fichero con confirmación."""
-    target = _resolve(path, cwd)
+    target = _resolve(path, cwd, "delete_file")
 
     if not target.exists():
         return {"error": f"Fichero no encontrado: {path}"}

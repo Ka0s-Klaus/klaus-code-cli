@@ -345,6 +345,7 @@ async def test_spawn_agent_required_failure_returns_error(
         "pseudonymizer:\n  required: true\n"
     )
     monkeypatch.setattr(cm, "CONFIG_PATH", cfg_file)
+    monkeypatch.chdir(tmp_path)  # workspace = tmp_path (#56)
     proxy.status = 500
 
     result = await spawn_agent("tarea", model="openai/gpt-4o", cwd=tmp_path)

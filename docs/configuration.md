@@ -118,7 +118,7 @@ Más seguro ◄─────────────────────�
  confirmación)    bash pide)           confirmación)
 ```
 
-> 🔒 **Excepción de seguridad**: Los patrones peligrosos de bash (`rm -rf /`, `curl | bash`, fork bombs, etc.) están **siempre** bloqueados, incluso con `--yolo`.
+> 🔒 **Lo que `--yolo` no desactiva:** la denylist de bash (*best effort*), el confinamiento al workspace de las tools de ficheros, la `bash_allowlist` (si está definida) y la confianza en hooks de proyecto. Ver [🔐 Security](security.md).
 
 ---
 
@@ -215,6 +215,27 @@ Un registro correcto se recuerda durante el proceso: los sub-agentes y los cambi
 > 🔐 **Despliegues con cliente / datos sensibles:** usa `required: true`. Es la única forma de garantizar que ninguna petición salga hacia un modelo externo sin seudonimizar. Con `false`, Klaus prioriza la disponibilidad y solo avisa.
 
 > ⚠️ **Limitación conocida:** el registro vive en memoria del proxy. Si klaude-proxy se reinicia durante una sesión de Klaus, hay que reiniciar Klaus para volver a registrar los literales.
+
+---
+
+## 🛡️ Sección `security`
+
+Límites del agente. El detalle y el modelo de amenazas están en [🔐 Security](security.md).
+
+```yaml
+security:
+  allowed_paths: []            # Directorios extra (además del proyecto) para las tools de ficheros
+  outside_workspace: "ask"     # "ask" (pregunta incluso en --yolo; sin TTY deniega) | "deny"
+  project_hooks: "ask"         # Hooks de <proyecto>/.Klaus/hooks: "ask" | "trust" | "never"
+  bash_allowlist: []           # Con bash auto-aprobado, solo estos prefijos corren sin preguntar
+```
+
+| Clave | Default | Efecto |
+| --- | --- | --- |
+| `allowed_paths` | `[]` | Rutas (admiten `~`) accesibles además del proyecto |
+| `outside_workspace` | `ask` | Qué hacer con rutas fuera del workspace |
+| `project_hooks` | `ask` | Confianza por hash, guardada en `~/.Klaus/trusted_hooks.json` |
+| `bash_allowlist` | `[]` | Vacío = sin filtro. Ej.: `["pytest", "ruff check", "git status"]` |
 
 ---
 

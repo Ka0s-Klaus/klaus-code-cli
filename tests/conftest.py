@@ -41,3 +41,14 @@ def reset_pseudonymizer_cache():
     pc._configured.clear()
     yield
     pc._configured.clear()
+
+
+@pytest.fixture(autouse=True)
+def reset_security_state(tmp_path_factory, monkeypatch):
+    """Estado de seguridad limpio por test y almacén de confianza fuera de ~/.Klaus."""
+    import klaus.security as sec
+
+    sec.reset_security()
+    monkeypatch.setattr(sec, "TRUST_STORE", tmp_path_factory.mktemp("trust") / "trusted_hooks.json")
+    yield
+    sec.reset_security()

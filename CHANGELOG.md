@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Security: workspace, run_bash, hooks y sub-agentes
+
+### Security
+- **Workspace** (`klaus/security.py`): `read_file`, `list_directory`, `glob_search`, `grep_search`, `write_file`, `edit_file`, `delete_file` y `read_image` solo operan dentro del proyecto + `security.allowed_paths`. Se resuelven `~`, `..` y symlinks. Las rutas exteriores se preguntan (también en `--yolo`), o se deniegan sin TTY
+- `glob_search` / `grep_search` descartan resultados fuera del workspace (patrones `..`, symlinks)
+- `_dispatch_tool`: el argumento `cwd` enviado por el modelo se descarta. Antes, el fallback por `TypeError` lo pasaba al handler y permitía salir del proyecto
+- **Sub-agentes**: `spawn_agent` ya no fuerza la auto-aprobación de escrituras y bash. Antes, delegar en un sub-agente evitaba las confirmaciones y además **las desactivaba para el resto de la sesión del padre**
+- **Sub-agentes**: sus tools pasan por `_dispatch_tool` (validación + hooks PreToolUse/PostToolUse). Antes, un hook de protección se eludía delegando. El `cwd` del sub-agente debe estar dentro del workspace
+- **Hooks de proyecto**: requieren confianza explícita, guardada por hash en `~/.Klaus/trusted_hooks.json` y renovada si cambian. Sin TTY no se ejecutan. Política `security.project_hooks`: `ask` | `trust` | `never`
+- Hooks ejecutados con `asyncio.create_subprocess_exec` (ya no bloquean el event loop)
+- **run_bash**: denylist ampliada (`rm -r -f`, `--recursive --force`, `find / -delete`, pipe a shell, `$(… base64 -d)`, `eval $(…)`, escritura en `~/.ssh`, `chmod -R 777 /`, discos nvme/macOS) y fork bomb real detectada. Documentada como *best effort*
+- **run_bash**: `security.bash_allowlist` para modo desatendido. Con bash auto-aprobado, lo que no sea un comando simple con prefijo permitido se confirma, o se rechaza sin TTY
+
+### Added
+- `klaus/config.py`: sección `security` (`allowed_paths`, `outside_workspace`, `project_hooks`, `bash_allowlist`)
+- `tests/test_security.py`: 65 tests (traversal, symlinks, YOLO, evasiones de denylist, allowlist, confianza en hooks, sub-agentes)
+- `docs/security.md`: modelo de amenazas, barreras, configuración por entorno y limitaciones
+
+### Changed
+- `docs/mcp.md`: corregido. Las tools MCP **no** piden confirmación (la documentación decía lo contrario)
+- `docs/tools.md`, `docs/configuration.md`, `docs/architecture.md`, `README.md`: alineados con lo anterior
+
+**Issue:** [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56)
+
+---
+
 ## [Unreleased] — Fix: pseudonymizer en todos los caminos hacia el modelo
 
 ### Fixed

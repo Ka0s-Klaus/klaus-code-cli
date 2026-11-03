@@ -19,6 +19,7 @@ from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
+from .security import configure_security
 from .sessions import SessionLock, SessionManager, list_sessions
 from .streaming import StreamRenderer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
@@ -237,6 +238,7 @@ async def run_repl(
     )
 
     cwd = project_root
+    configure_security(config, cwd)
     ctx = load_project_context(cwd, max_tokens=config.context.max_Klaus_md_tokens)
     system_prompt = ctx.get("system_prompt")
 
