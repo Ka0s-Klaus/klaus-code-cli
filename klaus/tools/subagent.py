@@ -88,6 +88,14 @@ async def spawn_agent(
         sub_schemas = [s for s in TOOL_SCHEMAS if s["name"] in tools]
         sub_handlers = {k: v for k, v in TOOL_HANDLERS.items() if k in tools}
 
+    # Pseudonymizer: el sub-agente puede usar otro modelo (externo) que el padre (#55)
+    from ..pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
+
+    try:
+        await ensure_pseudonymizer(sub_config, cwd or Path.cwd())
+    except PseudonymizerError as e:
+        return {"error": str(e)}
+
     # Capturar resultado del sub-agente
     collected_text: list[str] = []
 

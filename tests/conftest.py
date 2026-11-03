@@ -31,3 +31,13 @@ def isolate_env(monkeypatch):
     """Aísla los tests de variables KLAUDE_* presentes en el entorno del desarrollador."""
     for var in ("KLAUDE_PROXY_URL", "KLAUDE_MODEL", "KLAUDE_API_FORMAT", "KLAUDE_API_KEY"):
         monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def reset_pseudonymizer_cache():
+    """Cada test parte sin literales registrados (caché de proceso de pseudonymizer_config)."""
+    import klaus.pseudonymizer_config as pc
+
+    pc._configured.clear()
+    yield
+    pc._configured.clear()

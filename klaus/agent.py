@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -19,7 +18,7 @@ from .config import KlausConfig
 from .context import compact_messages, load_project_context
 from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
-from .pseudonymizer_config import configure_pseudonymizer
+from .pseudonymizer_config import PseudonymizerError, ensure_pseudonymizer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
 
 if TYPE_CHECKING:
@@ -69,21 +68,18 @@ async def run_agent_loop(
     active_schemas = list(TOOL_SCHEMAS)
     active_handlers: dict[str, Any] = dict(TOOL_HANDLERS)
 
+    # --- Pseudonymizer: antes de cualquier petición al modelo (#55) ---
+    try:
+        await ensure_pseudonymizer(config, cwd)
+    except PseudonymizerError as e:
+        console.print(f"[red]🔒 {e}[/red]")
+        return 1
+
     try:
         if config.mcp_servers:
             await mcp.startup(config.mcp_servers)
             active_schemas.extend(mcp.schemas)
             active_handlers.update(mcp.handlers)
-
-        # --- Configurar pseudonymizer en el proxy (no-blocking, fire-and-forget) ---
-        # Solo configurar si el modelo es externo, no local
-        asyncio.create_task(
-            configure_pseudonymizer(
-                base_url=config.provider.base_url,
-                model=config.provider.model,
-                project_root=cwd,
-            )
-        )
 
         return await _agent_loop(
             prompt=prompt,
