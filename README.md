@@ -1,143 +1,133 @@
 # 🤖 Klaus Code CLI
 
-> **Agente de codificación agnóstico de proveedor** — conecta cualquier modelo (Anthropic, OpenAI, local via LiteLLM/Ollama) con tu codebase a través de una interfaz CLI potente y sin fricciones.
+> **Agente de codificación agnóstico de proveedor.** Conecta cualquier modelo (Anthropic, OpenAI, local vía LiteLLM/Ollama) con tu código desde la terminal, con confirmaciones, límites de seguridad y seudonimización de datos.
 
-[![CI](https://github.com/Ka0s-Klaus/Klaus-code-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Ka0s-Klaus/Klaus-code-cli/actions/workflows/ci.yml)
+[![CI](https://github.com/Ka0s-Klaus/klaus-code-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Ka0s-Klaus/klaus-code-cli/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](pyproject.toml)
 
 ---
 
-## ✨ ¿Qué es Klaus Code CLI?
+## 🤔 ¿Qué hago? ¿Cómo lo hago? ¿Y para qué lo hago?
 
-Klaus Code CLI es un agente de IA para codificación que opera directamente en tu terminal. A diferencia de las extensiones de editor, Klaus es **proveedor-agnóstico**: apunta a Anthropic, OpenAI, o cualquier servidor compatible con la API de Anthropic/OpenAI (LiteLLM, Ollama, vLLM...) cambiando una línea de configuración.
+**¿Qué hago:** Soy un agente de IA que lee, busca, edita y ejecuta en tu proyecto a partir de instrucciones en lenguaje natural, en una tarea (`klaus run`) o en una conversación (`klaus repl`).
 
-### 🎯 Características principales
+**¿Cómo lo hago:** Envío tu petición y las herramientas disponibles a un modelo a través de **klaude-proxy** (o de cualquier API compatible con Anthropic/OpenAI). Ejecuto las herramientas que pide, pidiendo confirmación para escrituras y comandos, y devuelvo los resultados hasta completar la tarea.
+
+**¿Para qué lo hago:** Para tener un asistente de código en la terminal que no te ata a un proveedor, que funciona con modelos locales y que protege tu entorno y tus datos: workspace confinado, confirmaciones y seudonimización antes de llegar a modelos externos.
+
+---
+
+## 🎯 Características principales
 
 | Feature | Descripción |
 |---|---|
-| 🔌 **Multi-proveedor** | Anthropic, OpenAI, LiteLLM, Ollama — sin cambiar código |
-| 💬 **REPL interactivo** | Sesión de conversación persistente con historial |
-| 📦 **11 tools integradas** | read, write, edit, delete, bash, glob, grep, git_status, git_diff, git_commit, list_directory |
-| 🔐 **Confirmaciones** | Toda acción destructiva pide confirmación antes de ejecutar |
-| ⚡ **Modo YOLO** | `--yolo` desactiva confirmaciones para workflows automatizados |
-| 📋 **Plan mode** | `--plan` genera un plan de acción antes de ejecutar |
-| 🧠 **Gestión de contexto** | Auto-compact cuando el contexto supera el 80% del límite |
-| 💾 **Sesiones persistentes** | Historial de conversación guardado entre sesiones |
-| 🔧 **MCP client** | Integra herramientas externas vía Model Context Protocol |
-| ⚡ **Streaming** | Respuestas token a token con Rich live rendering |
+| 🔌 **Multi-proveedor** | Formato Anthropic u OpenAI: klaude-proxy, Anthropic, OpenAI, LiteLLM, Ollama, vLLM… |
+| 🧰 **19 tools integradas** | Ficheros, búsqueda, bash, git, web, imágenes, tareas, memoria y sub-agentes ([🔧 Tools](docs/tools.md)) |
+| 💬 **REPL interactivo** | Sesiones persistentes, checkpoints, `/model`, comandos personalizados |
+| 🔐 **Seguridad** | Workspace confinado, confirmaciones, denylist/allowlist de bash, hooks con confianza ([🔐 Security](docs/security.md)) |
+| 🔒 **Seudonimización** | Registra rutas y usuario en klaude-proxy antes de hablar con modelos externos |
+| 📋 **Plan mode** | `--plan` propone un plan y pide confirmación antes de actuar |
+| 🧠 **Contexto** | `KLAUS.md` por proyecto, memorias persistentes y auto-compactación |
+| 🪝 **Hooks** | Scripts Pre/PostToolUse, Stop y Notification |
+| 🔧 **MCP** | Servidores Model Context Protocol como tools adicionales |
+| ⚡ **Modos autónomos** | `--allow-writes`, `--allow-bash`, `--yolo` |
 
 ---
 
 ## 🚀 Instalación rápida
 
-```bash
-# Desde PyPI
-pip install Klaus-code-cli
-
-# Desde source
-git clone https://github.com/Ka0s-Klaus/Klaus-code-cli.git
-cd Klaus-code-cli
-pip install -e ".[dev]"
-```
-
 ### Requisitos
-
 - Python 3.11+
-- Una API key válida (Anthropic, OpenAI, o servidor compatible)
+- Acceso a klaude-proxy o a una API compatible (Anthropic/OpenAI)
 
-### Configuración inicial
+### Pasos
 
 ```bash
-# Crear config con valores por defecto
-Klaus init
+git clone https://github.com/Ka0s-Klaus/klaus-code-cli.git
+cd klaus-code-cli
+pip install -e .
 
-# Establecer API key
-export KLAUS_API_KEY="sk-ant-..."  # o la variable que configures
-
-# Verificar configuración
-Klaus config show
+klaus init                                        # crea ~/.klaus/config.yaml
+export KLAUS_PROXY_URL="http://<host>:8080/v1"    # tu klaude-proxy
+export KLAUS_API_KEY="sk-ant-..."                 # si tu proxy la requiere
+klaus config show                                 # verificar
 ```
+
+> ♻️ ¿Vienes de una versión anterior? `KLAUDE_*` y `~/.Klaus` siguen funcionando, con aviso. Ver [⚙️ Configuration](docs/configuration.md#-ubicación-del-fichero-de-config).
 
 ---
 
-## 💡 Uso básico
+## 💡 Uso
 
-### Modo agente (una tarea)
-
-```bash
-# Ejecutar una tarea con el agente
-Klaus run "Refactoriza la función parse_config en config.py para usar dataclasses"
-
-# Con streaming desactivado
-Klaus run "Explica la arquitectura del proyecto" --no-stream
-
-# Con plan previo (muestra el plan y pide confirmación antes de actuar)
-Klaus run "Añade tests para el módulo sessions.py" --plan
-
-# Modo YOLO — sin confirmaciones interactivas
-Klaus run "Formatea todos los ficheros Python con black" --yolo
-```
-
-### REPL interactivo
+### Una tarea
 
 ```bash
-# Iniciar sesión interactiva
-Klaus repl
-
-# Con nombre de sesión para recuperarla después
-Klaus repl --session mi-proyecto
-
-# Retomar sesión existente
-Klaus repl --session mi-proyecto  # si existe, se reanuda automáticamente
-
-# Con un modelo específico
-Klaus repl --model claude-opus-4-8
+klaus run "Refactoriza parse_config en config.py para usar dataclasses"
+klaus run "Añade tests para sessions.py" --plan     # plan previo + confirmación
+klaus run "Formatea con ruff" --allow-bash          # bash sin confirmación
 ```
 
-### Comandos especiales en el REPL
+### Conversación (REPL)
+
+```bash
+klaus repl                          # sesión del proyecto actual (se reanuda)
+klaus repl --session mi-feature     # sesión con nombre
+klaus repl --model claude-opus-4-8  # otro modelo
+klaus sessions list                 # sesiones guardadas
+```
 
 | Comando | Acción |
 |---|---|
-| `/help` | Muestra la ayuda |
-| `/clear` | Limpia el historial de conversación |
-| `/history` | Muestra los mensajes de la sesión |
-| `/sessions` | Lista sesiones guardadas |
-| `/tokens` | Muestra el conteo de tokens acumulados |
-| `/exit` o `/quit` | Sale del REPL |
+| `/help` | Ayuda (incluye tus comandos personalizados) |
+| `/model [nombre]` | Ver o cambiar el modelo |
+| `/tokens` | Consumo acumulado de la sesión |
+| `/todos` | Lista de tareas de la sesión |
+| `/memory list` · `/memory add <n> <txt>` | Memorias persistentes |
+| `/checkpoint [nombre]` · `/checkpoints` | Guardar y listar checkpoints |
+| `/history` · `/sessions` · `/clear` | Historial, sesiones, limpiar |
+| `/exit` · `/quit` | Salir |
+
+### Contexto del proyecto
+
+Crea un `KLAUS.md` en la raíz con las convenciones del proyecto (o genera uno con `klaus init --scan`). Se inyecta en el system prompt de cada sesión.
 
 ---
 
-## 📁 Estructura del proyecto
+## 🏗️ Arquitectura
 
+```mermaid
+graph TD
+    CLI["cli.py — run / repl / init"] --> AG["agent.py / repl.py — bucle del agente"]
+    AG --> PR["provider/ — Anthropic · OpenAI"]
+    PR --> PX["klaude-proxy"]
+    AG --> DT["_dispatch_tool — validación + hooks"]
+    DT --> TL["tools/ — 19 tools"]
+    DT --> MCP["mcp/ — servidores MCP"]
+    TL --> SEC["security.py — workspace · bash · hooks"]
+    AG --> PS["pseudonymizer_config.py"]
+    PS --> PX
 ```
-Klaus-code-cli/
-├── Klaus/                    # Paquete principal
-│   ├── cli.py               # Punto de entrada CLI (Typer)
-│   ├── agent.py             # Loop del agente multi-turn
-│   ├── repl.py              # REPL interactivo
-│   ├── config.py            # Configuración (Pydantic)
-│   ├── sessions.py          # Persistencia de sesiones
-│   ├── streaming.py         # StreamRenderer (Rich live)
-│   ├── context.py           # Gestión de contexto + auto-compact
-│   ├── provider/            # Adapters de proveedor
-│   │   ├── base.py          # ProviderAdapter (abstract)
-│   │   ├── anthropic.py     # Adapter Anthropic API
-│   │   └── openai_fmt.py    # Adapter OpenAI-compatible
-│   ├── tools/               # Herramientas del agente
-│   │   ├── files.py         # read_file, list_directory
-│   │   ├── write.py         # write_file, edit_file, delete_file
-│   │   ├── bash.py          # run_bash
-│   │   ├── git.py           # git_status, git_diff, git_commit
-│   │   └── search.py        # glob_search, grep_search
-│   └── mcp/                 # Cliente MCP
-│       └── client.py        # MCPRegistry
-├── tests/                   # Suite pytest (41 tests)
-├── docs/                    # Documentación detallada
-├── .github/workflows/       # CI/CD (lint + typecheck + tests + release)
-├── pyproject.toml           # Metadata + dependencias
-└── CHANGELOG.md             # Historial de versiones
+
+**Stack:**
+- CLI: Typer + Rich
+- Configuración: Pydantic + YAML (`~/.klaus/config.yaml`)
+- HTTP: httpx + tenacity (reintentos)
+- MCP: SDK oficial `mcp`
+- Tests: pytest + pytest-asyncio · Lint: ruff · Tipado: mypy
+
+Detalle en [🏗️ Architecture](docs/architecture.md).
+
+---
+
+## 🧪 Tests
+
+```bash
+pip install -e ".[dev]"
+ruff check . && mypy . && pytest tests/ -q
 ```
+
+Los mismos checks que el CI (Python 3.11 / 3.12 / 3.13). Ver [🧪 Development](docs/development.md).
 
 ---
 
@@ -145,24 +135,20 @@ Klaus-code-cli/
 
 | Doc | Contenido |
 |---|---|
-| [📦 Installation](docs/installation.md) | Requisitos, pip install, config inicial, env vars |
+| [📦 Installation](docs/installation.md) | Requisitos, instalación, configuración inicial |
 | [💡 Usage](docs/usage.md) | Todos los comandos, flags y ejemplos |
-| [⚙️ Configuration](docs/configuration.md) | Referencia completa de `~/.Klaus/config.yaml` |
-| [🔧 Tools](docs/tools.md) | Las 11 tools integradas — cómo funcionan y cómo controlarlas |
-| [🔌 MCP](docs/mcp.md) | Integración de servidores MCP externos |
-| [🏗️ Architecture](docs/architecture.md) | Arquitectura interna — diagramas y módulos |
-| [🧪 Development](docs/development.md) | Entorno local, checks de CI y convenciones |
-| [🔐 Security](docs/security.md) | Modelo de amenazas, workspace, bash, hooks y sub-agentes |
+| [⚙️ Configuration](docs/configuration.md) | Referencia completa de `~/.klaus/config.yaml` y variables `KLAUS_*` |
+| [🔐 Security](docs/security.md) | Modelo de amenazas y configuración recomendada por entorno |
+| [🔧 Tools](docs/tools.md) | Las tools integradas y sus confirmaciones |
+| [🔌 MCP](docs/mcp.md) | Servidores MCP externos |
+| [🏗️ Architecture](docs/architecture.md) | Módulos y flujo interno |
+| [🧪 Development](docs/development.md) | Entorno local, CI y release |
 
 ---
 
 ## 🤝 Contribuir
 
-1. Fork del repositorio
-2. `git checkout -b feat/mi-feature`
-3. `pip install -e ".[dev]"` para instalar dependencias de desarrollo
-4. `ruff check . && mypy . && pytest tests/ -q` — los mismos checks que el CI
-5. Pull request contra `main` (ver [🧪 Development](docs/development.md))
+Todo cambio sigue el flujo **issue → rama → PR con aprobación humana**. Ver [🤝 CONTRIBUTING.md](CONTRIBUTING.md), que incluye la convención de nombres y el checklist del PR.
 
 ---
 

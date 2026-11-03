@@ -4,7 +4,7 @@
 
 **¿Qué hago?** Extender las capacidades del agente con herramientas externas (bases de datos, APIs, sistemas de ficheros remotos) a través del protocolo estándar MCP.
 
-**¿Cómo lo hago?** Configurando servidores MCP en `~/.Klaus/config.yaml`. Klaus arranca cada servidor como un subproceso al iniciar la sesión, registra sus tools automáticamente y las hace disponibles al agente igual que las tools integradas.
+**¿Cómo lo hago?** Configurando servidores MCP en `~/.klaus/config.yaml`. Klaus arranca cada servidor como un subproceso al iniciar la sesión, registra sus tools automáticamente y las hace disponibles al agente igual que las tools integradas.
 
 **¿Para qué lo hago?** Para que el agente pueda interactuar con cualquier sistema externo sin necesidad de escribir código Python — basta con un servidor MCP compatible (hay decenas disponibles en npm y PyPI).
 
@@ -12,7 +12,7 @@
 
 ## ⚙️ Configuración
 
-En `~/.Klaus/config.yaml`:
+En `~/.klaus/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -31,14 +31,7 @@ mcp_servers:
       GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}"
 ```
 
-O via `--mcp-config` en CLI:
-
-```bash
-Klaus run "lista las tablas de la base de datos" --mcp-config ./mcp.json
-Klaus repl --mcp-config ~/.Klaus/mcp-servers.json
-```
-
-El fichero JSON tiene el mismo formato que `mcp_servers` en el yaml.
+> ℹ️ Los servidores MCP se configuran **solo** en `mcp_servers` de `~/.klaus/config.yaml`. La opción `--mcp-config` que mencionaban versiones anteriores de esta guía no está implementada.
 
 ---
 

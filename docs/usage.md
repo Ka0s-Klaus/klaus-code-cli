@@ -4,7 +4,7 @@
 
 **¿Qué hago?** Ejecutar tareas de codificación mediante el agente o mantener una conversación iterativa en el REPL.
 
-**¿Cómo lo hago?** Con los comandos `Klaus run` (una tarea), `Klaus repl` (sesión interactiva), `Klaus sessions` (gestión de historial) y `Klaus config` (configuración).
+**¿Cómo lo hago?** Con los comandos `klaus run` (una tarea), `klaus repl` (sesión interactiva), `klaus sessions` (gestión de historial) y `klaus config` (configuración).
 
 **¿Para qué lo hago?** Para delegar al agente tareas de refactorización, análisis, generación de tests, commits y cualquier operación sobre el codebase, con control total de las confirmaciones antes de que se ejecute cualquier acción destructiva.
 
@@ -15,8 +15,8 @@
 ```mermaid
 flowchart TD
     U["👤 Usuario"] --> CLI["Klaus CLI"]
-    CLI --> RUN["Klaus run\n(modo agente)"]
-    CLI --> REPL["Klaus repl\n(modo interactivo)"]
+    CLI --> RUN["klaus run\n(modo agente)"]
+    CLI --> REPL["klaus repl\n(modo interactivo)"]
     RUN --> AGENT["🤖 Agent Loop"]
     REPL --> AGENT
     AGENT --> LLM["☁️ LLM Provider\n(Anthropic / OpenAI / LiteLLM)"]
@@ -32,12 +32,12 @@ flowchart TD
 
 ---
 
-## 📟 Comando `Klaus run` — modo agente
+## 📟 Comando `klaus run` — modo agente
 
 Ejecuta una tarea única y sale. Ideal para scripts, CI/CD y tareas puntuales.
 
 ```bash
-Klaus run <PROMPT> [OPCIONES]
+klaus run <PROMPT> [OPCIONES]
 ```
 
 ### Opciones
@@ -51,35 +51,36 @@ Klaus run <PROMPT> [OPCIONES]
 | `--allow-writes` | flag | false | Auto-aprueba operaciones de escritura |
 | `--allow-bash` | flag | false | Auto-aprueba comandos bash |
 | `--yolo` | flag | false | Equivale a `--allow-writes --allow-bash` |
-| `--no-stream` | flag | false | Desactiva streaming (output completo al final) |
+
+> ℹ️ `klaus run` muestra la respuesta completa de cada turno (sin streaming). `--no-stream` solo existe en `klaus repl`.
 
 ### Ejemplos
 
 ```bash
 # Análisis de código (solo lectura — sin confirmaciones)
-Klaus run "Explica cómo funciona el módulo sessions.py"
+klaus run "Explica cómo funciona el módulo sessions.py"
 
 # Tarea de refactorización con plan previo
-Klaus run "Extrae la lógica de validación de config.py a un módulo validate.py" --plan
+klaus run "Extrae la lógica de validación de config.py a un módulo validate.py" --plan
 
 # Generación de tests (requiere escritura)
-Klaus run "Añade tests para las funciones de sessions.py" --allow-writes
+klaus run "Añade tests para las funciones de sessions.py" --allow-writes
 
 # Pipeline CI — sin interactividad
-Klaus run "Actualiza el CHANGELOG.md con los cambios del último commit" --yolo
+klaus run "Actualiza el CHANGELOG.md con los cambios del último commit" --yolo
 
 # Con modelo específico y URL propia
-Klaus run "Resume el fichero README.md" --model claude-opus-4-8 --base-url https://api.anthropic.com
+klaus run "Resume el fichero README.md" --model claude-opus-4-8 --base-url https://api.anthropic.com
 ```
 
 ---
 
-## 💬 Comando `Klaus repl` — REPL interactivo
+## 💬 Comando `klaus repl` — REPL interactivo
 
 Abre una sesión de conversación continua. El historial persiste entre turnos y puede guardarse entre sesiones.
 
 ```bash
-Klaus repl [OPCIONES]
+klaus repl [OPCIONES]
 ```
 
 ### Opciones
@@ -111,7 +112,7 @@ Klaus repl [OPCIONES]
 ### Ejemplo de sesión típica
 
 ```
-$ Klaus repl --session refactor-auth
+$ klaus repl --session refactor-auth
 
 ╭─────────────────────────────────────────────────────────╮
 │  🤖 Klaus Code CLI v0.16.0 — REPL interactivo           │
@@ -140,21 +141,21 @@ $ Klaus repl --session refactor-auth
 
 ---
 
-## 📂 Comando `Klaus sessions` — gestión de sesiones
+## 📂 Comando `klaus sessions` — gestión de sesiones
 
 ```bash
-Klaus sessions list                    # Lista todas las sesiones guardadas
-Klaus sessions show <session_id>       # Muestra el historial de una sesión
-Klaus sessions clear <session_id>      # Borra una sesión específica
-Klaus sessions clear --all             # Borra todas las sesiones
+klaus sessions list                    # Lista todas las sesiones guardadas
+klaus sessions show <session_id>       # Muestra el historial de una sesión
+klaus sessions clear <session_id>      # Borra una sesión específica
+klaus sessions clear --all             # Borra todas las sesiones
 ```
 
 ---
 
-## ⚙️ Comando `Klaus config`
+## ⚙️ Comando `klaus config`
 
 ```bash
-Klaus config show      # Muestra la configuración activa (sin API key)
+klaus config show      # Muestra la configuración activa (sin API key)
 ```
 
 ---
