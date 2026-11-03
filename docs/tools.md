@@ -28,6 +28,8 @@
 
 > *️⃣ *"Siempre" = salvo que `--yolo`, `--allow-writes` o `--allow-bash` estén activos.*
 
+> 📁 Las tools de ficheros solo operan **dentro del proyecto** (+ `security.allowed_paths`). Una ruta exterior pide confirmación incluso con `--yolo`, o se deniega sin TTY. Ver [🔐 Security](security.md).
+
 ---
 
 ## 📖 Tools de lectura
@@ -144,12 +146,15 @@ Independientemente del modo (`--yolo` incluido), estos patrones están **permane
 
 | Patrón | Riesgo |
 |---|---|
-| `rm -rf /` | Borrado del sistema de ficheros raíz |
-| `rm -rf ~` | Borrado del home del usuario |
-| `curl \| bash` / `wget \| sh` | Ejecución remota de código arbitrario |
+| `rm -rf`, `rm -r -f`, `rm --recursive --force`, `/bin/rm -rf` | Borrado recursivo forzado |
+| `find / -delete`, `find ~ -exec rm` | Borrado masivo en raíz o home |
+| `curl \| bash`, `… \| sh`, `$(… base64 -d)`, `eval $(…)` | Ejecución de código remoto u ofuscado |
+| `> ~/.ssh/…`, `tee ~/.ssh/…` | Persistencia vía claves SSH |
 | Fork bombs (`:(){ :|:& };:`) | Agotamiento de recursos del sistema |
-| `dd if=... of=/dev/sd*` | Sobreescritura de discos |
-| `mkfs.*` en dispositivos de bloque | Formateo de discos |
+| `dd … of=/dev/{sd,nvme,disk}*`, `mkfs` | Sobreescritura o formateo de discos |
+| `chmod [-R] 777 /`, `sudo su`, `sudo passwd` | Permisos globales / escalada |
+
+> 🚨 La denylist es *best effort*: un comando ofuscado puede evadirla. La barrera real es la confirmación. En modo desatendido, usa `security.bash_allowlist` ([🔐 Security](security.md#-allowlist-de-run_bash-modo-desatendido)).
 
 ---
 
@@ -178,6 +183,7 @@ Hace `git add` + `git commit`. Muestra un resumen y pide confirmación.
 
 ## 🔗 Documentación relacionada
 
+- [🔐 Security](security.md) — workspace, denylist/allowlist de bash, hooks y sub-agentes
 - [⚙️ Configuration](configuration.md) — cómo controlar confirmaciones globalmente
 - [💡 Usage](usage.md) — flags `--yolo`, `--allow-writes`, `--allow-bash`
 - [🔌 MCP](mcp.md) — tools adicionales vía MCP

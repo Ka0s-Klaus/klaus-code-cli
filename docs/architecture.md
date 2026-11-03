@@ -143,6 +143,8 @@ async def close() -> None
 `TOOL_HANDLERS` — dict `name → async callable`.
 `configure_confirmations(auto_approve_writes, auto_approve_bash)` — wires los flags de modo YOLO.
 
+`klaus/security.py` → `configure_security(config, project_root)`: fija al arrancar la sesión el workspace, la política de hooks de proyecto y la `bash_allowlist`. Las tools de ficheros resuelven rutas con `resolve_path()`; los sub-agentes heredan la política. Ver [🔐 Security](security.md).
+
 ### `sessions.py` — Persistencia
 
 `SessionManager` — CRUD de sesiones en `~/.Klaus/sessions/` (JSON).
