@@ -25,6 +25,7 @@
 | Un repo clonado ejecuta código al usar Klaus | `.klaus/hooks/PreToolUse` malicioso | 🪝 Confianza en hooks |
 | Eludir confirmaciones o hooks delegando en un sub-agente | `spawn_agent("escribe ~/.bashrc")` | 🤖 Sub-agentes heredan la política |
 | Datos personales hacia modelos externos | Rutas y username en el prompt | 🔒 [Pseudonymizer](configuration.md#-sección-pseudonymizer) |
+| Una tool MCP con efectos actúa sin aprobación | `mcp_github_delete_repo`, `mcp_postgres_query("DROP …")` | 🔌 [Confirmación MCP](mcp.md#-confirmación) |
 
 ---
 
@@ -47,7 +48,7 @@ Las tools de ficheros (`read_file`, `list_directory`, `glob_search`, `grep_searc
 
 ### ✅ Confirmaciones
 
-Las escrituras, `git_commit` y `run_bash` piden confirmación salvo con `--allow-writes`, `--allow-bash` o `--yolo` (ver [🔧 Tools](tools.md)). Las lecturas no piden confirmación, y por eso el workspace es su barrera.
+Las escrituras, `git_commit`, `run_bash` y las tools MCP con efectos piden confirmación salvo con `--allow-writes`, `--allow-bash` o `--yolo` (ver [🔧 Tools](tools.md) y [🔌 MCP](mcp.md#-confirmación)). Las lecturas no piden confirmación, y por eso el workspace es su barrera.
 
 ### 🧱 Denylist de `run_bash`: *best effort*
 
@@ -106,6 +107,10 @@ security:
   project_hooks: never        # o ask, revisando cada hook
 pseudonymizer:
   required: true
+mcp_servers:
+  - name: "…"
+    command: ["…"]
+    confirm: always           # toda tool MCP pasa por una persona
 ```
 
 Y **sin** `--yolo`.
@@ -117,6 +122,9 @@ security:
   outside_workspace: deny
   project_hooks: trust        # solo si el repo es tuyo
   bash_allowlist: ["pytest", "ruff check", "mypy", "git status", "git diff"]
+# Servidores MCP: en CI sin TTY, "auto" ejecuta las de solo lectura y deniega
+# las demás si no hay --allow-writes/--yolo. Con --yolo, usa confirm: always
+# en los servidores con efectos que no deban usarse desatendidos.
 ```
 
 ---
@@ -127,7 +135,8 @@ security:
 |---|---|
 | `run_bash` puede acceder a cualquier ruta | Confirmación interactiva; allowlist en modo desatendido; ejecutar Klaus en un contenedor para aislamiento real |
 | La denylist es evadible | Es *best effort* por diseño; no sustituye a la confirmación |
-| Las tools **MCP no piden confirmación** y no están confinadas al workspace (un servidor `filesystem` accede a lo que se le configure) | Configurar servidores MCP solo con el alcance mínimo. Seguimiento en una issue propia |
+| Las tools MCP **no están confinadas al workspace**: el alcance lo decide el servidor | Alcance mínimo por servidor (directorios, scopes); `confirm: always` en servidores críticos |
+| El hint `readOnlyHint` lo declara el propio servidor | `trust_read_only: false` o `confirm: always` para servidores de terceros no revisados |
 | `git_*` y `web_fetch` no pasan por el workspace | `git` opera sobre el repo del `cwd`; `web_fetch` no accede al disco |
 
 ---

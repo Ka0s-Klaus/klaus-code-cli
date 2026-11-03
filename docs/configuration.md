@@ -265,12 +265,22 @@ mcp_servers:
   - name: "filesystem"
     command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
     env: {}
+    confirm: "auto"            # auto | always | never
+    trust_read_only: true      # en auto, no preguntar en tools con readOnlyHint
 
   - name: "postgres"
     command: ["npx", "-y", "@modelcontextprotocol/server-postgres"]
     env:
       DATABASE_URL: "postgresql://user:pass@localhost/mydb"
 ```
+
+| Clave | Default | Efecto |
+| --- | --- | --- |
+| `name` | — | Prefijo de las tools: `mcp_<name>_<tool>` |
+| `command` | — | Comando que arranca el servidor (stdio) |
+| `env` | `{}` | Variables extra; `${VAR}` se expande desde el entorno |
+| `confirm` | `auto` | Confirmación de sus tools ([✅ detalle](mcp.md#-confirmación)) |
+| `trust_read_only` | `true` | En `auto`, confiar en `readOnlyHint` del servidor |
 
 ---
 

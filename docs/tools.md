@@ -28,6 +28,8 @@
 
 > *️⃣ *"Siempre" = salvo que `--yolo`, `--allow-writes` o `--allow-bash` estén activos.*
 
+> 🔌 Las tools MCP (`mcp_<servidor>_<tool>`) con efectos también piden confirmación, según `mcp_servers[].confirm`. Ver [🔌 MCP](mcp.md#-confirmación).
+
 > 📁 Las tools de ficheros solo operan **dentro del proyecto** (+ `security.allowed_paths`). Una ruta exterior pide confirmación incluso con `--yolo`, o se deniega sin TTY. Ver [🔐 Security](security.md).
 
 ---
