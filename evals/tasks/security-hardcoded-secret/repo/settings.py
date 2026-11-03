@@ -1,2 +1,2 @@
-API_KEY = "sk-live-EJEMPLO-NO-REAL-0000"
+API_KEY = "sk-live-0000000000000000"
 API_URL = "https://payments.example.com/v1"
