@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — Fix: CI verde en main
+
+### Fixed
+- `tests/`: imports y `patch()` actualizados de `Klaus` a `klaus` tras el renombrado del paquete (causa de 28 fallos y 21 errores)
+- `tests/test_config.py`: alineados con las env vars reales `KLAUDE_API_KEY` / `KLAUDE_MODEL`
+- `klaus/mcp/client.py`: compatibilidad con `mcp` 2.x (`input_schema`) y 1.x (`inputSchema`). Con la 2.x, el arranque de servidores MCP fallaba con `AttributeError`
+- `klaus/provider/openai_fmt.py`: `stream_message` acepta `on_thinking` según el contrato de `ProviderAdapter`. El streaming del REPL con `api_format: openai` fallaba con `TypeError`. Ahora además emite `reasoning_content` si el servidor lo envía
+- `klaus/tools/image.py`: el portapapeles con ficheros (lista de rutas) devuelve un error claro; `Image.Resampling.LANCZOS`
+- `klaus/agent.py`, `klaus/tools/subagent.py`: imports solo de tipado bajo `TYPE_CHECKING`
+- 18 errores de ruff (imports, `UP017`, `E741`, `E402`) y 6 de mypy
+
+### Added
+- `tests/conftest.py`: fixture `isolate_env` que aísla los tests de las variables `KLAUDE_*` del entorno
+- `tests/test_mcp_client.py` y test de streaming con `on_thinking` en `tests/test_provider_openai.py` (regresiones)
+- `docs/development.md`: guía para reproducir el CI en local, convenciones y flujo de contribución
+
+**Files:** `klaus/`, `tests/`, `docs/development.md`, `README.md`, `CHANGELOG.md`
+**Issue:** [#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54)
+
+---
+
 ## [Unreleased] — Feat: KLAUDE_PROXY_URL
 
 ### Added
