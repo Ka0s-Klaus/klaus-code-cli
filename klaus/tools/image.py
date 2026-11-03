@@ -36,7 +36,12 @@ async def read_image(
 
     Si la imagen supera max_size_kb, la redimensiona (requiere Pillow).
     """
-    target = _resolve(path, cwd)
+    from ..security import WorkspaceError
+
+    try:
+        target = _resolve(path, cwd)
+    except WorkspaceError as e:
+        return {"error": str(e)}
 
     if not target.exists():
         return {"error": f"Imagen no encontrada: {path}"}
@@ -133,10 +138,10 @@ async def read_image_from_clipboard(
 
 
 def _resolve(path: str, cwd: Path | None) -> Path:
-    p = Path(path)
-    if not p.is_absolute():
-        p = (cwd or Path.cwd()) / p
-    return p.resolve()
+    """Resuelve la ruta y verifica que está dentro del workspace (#56)."""
+    from ..security import resolve_path
+
+    return resolve_path(path, cwd, "read_image")
 
 
 def _detect_media_type(path: Path) -> str:

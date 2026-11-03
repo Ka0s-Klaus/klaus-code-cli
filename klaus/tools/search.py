@@ -7,24 +7,30 @@ from pathlib import Path
 from typing import Any
 
 from ..context import KlausIgnore
+from ..security import guard_workspace, is_within_workspace, resolve_path
 
 
-def _resolve(path: str | None, cwd: Path | None) -> Path:
-    if not path:
-        return cwd or Path.cwd()
-    p = Path(path)
-    if not p.is_absolute():
-        p = (cwd or Path.cwd()) / p
-    return p.resolve()
+def _resolve(path: str | None, cwd: Path | None, op: str) -> Path:
+    """Resuelve la ruta (por defecto cwd) y verifica que está dentro del workspace (#56)."""
+    return resolve_path(path, cwd, op)
 
 
+def _safe(p: Path, cwd: Path | None) -> bool:
+    """Descarta resultados fuera del workspace: patrones con '..' o symlinks hacia fuera."""
+    try:
+        return is_within_workspace(p.resolve(), cwd)
+    except OSError:
+        return False
+
+
+@guard_workspace
 async def glob_search(
     pattern: str,
     base_path: str | None = None,
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Busca ficheros por patrón glob, respetando .klausignore."""
-    base = _resolve(base_path, cwd)
+    base = _resolve(base_path, cwd, "glob_search")
 
     if not base.exists():
         return {"error": f"Directorio base no encontrado: {base_path}"}
@@ -33,7 +39,7 @@ async def glob_search(
     matches: list[str] = []
 
     for p in sorted(base.glob(pattern)):
-        if not ignore.is_ignored(p):
+        if not ignore.is_ignored(p) and _safe(p, cwd):
             try:
                 rel = p.relative_to(base)
                 matches.append(str(rel))
@@ -48,6 +54,7 @@ async def glob_search(
     }
 
 
+@guard_workspace
 async def grep_search(
     pattern: str,
     path: str | None = None,
@@ -57,7 +64,7 @@ async def grep_search(
     cwd: Path | None = None,
 ) -> dict[str, Any]:
     """Busca texto o regex en ficheros. Devuelve matches con contexto."""
-    base = _resolve(path, cwd)
+    base = _resolve(path, cwd, "grep_search")
     flags = 0 if case_sensitive else re.IGNORECASE
 
     try:
@@ -74,7 +81,7 @@ async def grep_search(
         glob_pat = file_pattern or "**/*"
         files = [
             p for p in sorted(base.glob(glob_pat))
-            if p.is_file() and not ignore.is_ignored(p)
+            if p.is_file() and not ignore.is_ignored(p) and _safe(p, cwd)
         ]
 
     results: list[dict[str, Any]] = []
