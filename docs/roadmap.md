@@ -1,12 +1,12 @@
 # 🗺️ Roadmap — Agente de código soberano
 
-> **Estado: propuesta pendiente de aprobación** (3 de noviembre de 2026). Sustituye como dirección de producto al [roadmap de paridad con Claude Code](roadmap-feature-parity.md), cuyas fases 1-9 ya están completadas.
+> **Estado: aprobado** el 3 de noviembre de 2026 ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69)). Sustituye como dirección de producto al [roadmap de paridad con Claude Code](roadmap-feature-parity.md), cuyas fases 1-9 ya están completadas.
 
 ---
 
 ## 🤔 ¿Qué hago? ¿Cómo lo hago? ¿Y para qué lo hago?
 
-**¿Qué hago:** Propongo dejar de perseguir la paridad con Claude Code y convertir Klaus en **el agente de código soberano para clientes regulados**, en cuatro fases de noviembre de 2026 a septiembre de 2027.
+**¿Qué hago:** Dejo de perseguir la paridad con Claude Code y convertir Klaus en **el agente de código soberano para clientes regulados**, en cuatro fases de noviembre de 2026 a septiembre de 2027.
 
 **¿Cómo lo hago:** Con fases cerradas por **gates** comprobables, empezando por una batería de evaluación que permita medir la calidad del agente antes de invertir en nada más.
 
@@ -41,8 +41,8 @@ Klaus no debe competir como un Claude Code alternativo, sino como el agente que 
 | Seguridad | 🟡 Base sólida | Workspace, confirmaciones, hooks con confianza, MCP con confirmación ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56), [#61](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/61)) |
 | Privacidad | 🟡 Base sólida | Seudonimizador en todas las vías; `required` opcional ([#55](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/55)) |
 | Calidad del agente | 🔴 Sin medir | No hay batería de evaluación; no se sabe qué modelos funcionan bien |
-| Proceso | 🟡 Definido, sin forzar | [`CONTRIBUTING.md`](../CONTRIBUTING.md) existe; falta la protección de `main` |
-| Release | 🔴 Nunca publicado | Sin tags; sin fichero `LICENSE` |
+| Proceso | 🟡 Definido, sin forzar | [`CONTRIBUTING.md`](../CONTRIBUTING.md) existe; la protección de `main` no se activa de momento (decisión del 3/11/2026) |
+| Release | 🔴 Nunca publicado | Sin tags; `LICENSE` añadido en [#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69) |
 | Despliegue en cliente | 🔴 Sin empezar | Solo `pip install -e .`; sin modo offline ni configuración centralizada |
 
 ---
@@ -76,12 +76,12 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
     - Un comando `klaus eval --model <m>` que ejecuta la batería y saca una tabla: tasa de éxito, turnos, tokens, coste y tiempo.
     - Baseline en al menos 2 modelos: uno externo (vía klaude-proxy) y uno local.
 2. **Proceso**
-    - Protección de `main` (PR + 5 checks de CI obligatorios).
+    - La protección de `main` **no se activa de momento**: el flujo issue → rama → PR se sigue por convención (`CONTRIBUTING.md`).
     - La batería de evaluación se ejecuta como job semanal y en los PRs que toquen `agent.py`, `tools/` o los prompts.
 3. **Primera release `v0.16.0`**
-    - Fichero `LICENSE` (falta decidir el titular del copyright).
+    - ~~Fichero `LICENSE`~~ ✅ MIT, © Ka0s.
     - Tag y publicación por el workflow existente, que ya verifica que el tag coincide con la versión.
-4. **Limpieza:** decidir sobre `--mcp-config`; que `klaus init` ofrezca perfiles (`dev`, `cliente`, `ci`) basados en [🔐 Security](security.md#-configuración-recomendada-por-entorno).
+4. **Limpieza:** implementar `--mcp-config` ([#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70)); que `klaus init` ofrezca perfiles (`dev`, `cliente`, `ci`) basados en [🔐 Security](security.md#-configuración-recomendada-por-entorno).
 
 **Gate 0:** baseline publicado en 2 modelos y `v0.16.0` instalable.
 
@@ -139,7 +139,7 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
 | Hallazgos de seguridad bloqueantes en revisión externa | Sin revisar | 0 | 1 |
 | Tool calls con registro de auditoría | 0 % | 100 % | 1 |
 | Releases publicadas | 0 | Mensual desde v0.16 | 0 → 3 |
-| Commits directos a `main` | Posibles | 0 (bloqueados) | 0 |
+| Commits directos a `main` | Posibles | 0 (por convención, sin protección técnica) | 0 |
 | Clientes en piloto | 0 | 1 | 3 |
 
 ---
@@ -165,13 +165,20 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
 
 ---
 
-## ✅ Decisiones pendientes para arrancar
+## ✅ Decisiones
 
-- [ ] Aprobar el cambio de posicionamiento: de la paridad con Claude Code a un agente soberano para entornos regulados
+Tomadas el 3 de noviembre de 2026 ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69)):
+
+| Decisión | Resultado |
+|---|---|
+| Cambio de posicionamiento | ✅ Aprobado |
+| Protección de `main` | ⏸️ No se activa de momento |
+| Titular del copyright (`LICENSE`) | Ka0s |
+| `--mcp-config` | ✅ Se implementa ([#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70)) |
+
+Pendientes:
+
 - [ ] Confirmar la capacidad del equipo para la Fase 0
-- [ ] Activar la protección de `main` (el comando está en el [PR #64](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/64))
-- [ ] Titular del copyright para `LICENSE`
-- [ ] Implementar o descartar `--mcp-config`
 - [ ] Lista corta de modelos para el baseline (1 externo + 1 local)
 - [ ] Cliente candidato para la revisión de seguridad (Gate 1) y el piloto (Fase 3)
 

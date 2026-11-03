@@ -26,11 +26,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Variables de entorno del proxy (`KLAUS_PROXY_URL`, `KLAUS_MODEL`, `KLAUS_API_FORMAT`) ([#37](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/37), renombradas en [#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - REPL: `/tokens`, indicador de modo YOLO ([#32](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/32))
 - Secciones de config `pseudonymizer` y `security`
-- **Batería de evaluación** (Fase 0): `klaus eval` ejecuta el agente sobre tareas aisladas y mide éxito, turnos, tokens, tiempo y bloqueos; `--verify-tasks` valida la batería sin modelo (job de CI). 12 tareas iniciales en 7 categorías, con tests ocultos, mutation testing y trampas de seguridad. `RunStats` en `run_agent_loop` ([#71](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/71))
+- `--mcp-config` en `klaus run` y `klaus repl` (repetible): servidores MCP desde JSON/YAML, con los formatos `mcp_servers` y `mcpServers`. Documentado desde 0.13.0, pero nunca implementado hasta ahora ([#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70))
 - `klaus/compat.py`: avisos de obsolescencia para nombres anteriores ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
 - Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`
-- `docs/roadmap.md`: propuesta de roadmap (agente de código soberano, 4 fases con gates); `roadmap-feature-parity.md` queda como histórico ([#67](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/67))
+- `LICENSE`: MIT, © 2026 Ka0s; `pyproject.toml` lo referencia ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
+- `docs/roadmap.md`: propuesta de roadmap (agente de código soberano, 4 fases con gates); `roadmap-feature-parity.md` queda como histórico ([#67](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/67)); posicionamiento aprobado ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69))
 - Tests: de 41 a más de 250 (seguridad, pseudonymizer, bucle del agente, compatibilidad)
 
 ### Changed
@@ -54,7 +55,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - CI en verde: imports `klaus`, ruff y mypy ([#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54))
 - `OpenAIAdapter` enviaba las tools sin convertir al formato OpenAI (Ollama/Qwen3) ([#48](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/48))
 - Parámetros requeridos validados antes de invocar el handler (bucle `read_file({})`) ([#50](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/50))
-- Documentación: `klaus run --no-stream` y `--mcp-config` no existen (eliminados de las guías); `docs/mcp.md` decía que MCP pide confirmación ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58), [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- Documentación: `klaus run --no-stream` no existe (eliminado de las guías); `docs/mcp.md` decía que MCP pide confirmación ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58), [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
 
 ---
 

@@ -33,7 +33,27 @@ mcp_servers:
       GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}"
 ```
 
-> ℹ️ Los servidores MCP se configuran **solo** en `mcp_servers` de `~/.klaus/config.yaml`. La opción `--mcp-config` que mencionaban versiones anteriores de esta guía no está implementada.
+### 📄 Servidores desde un fichero (`--mcp-config`)
+
+Para una ejecución concreta, `klaus run` y `klaus repl` aceptan servidores adicionales desde un fichero JSON o YAML. La opción se puede repetir:
+
+```bash
+klaus run "lista las tablas de la base de datos" --mcp-config ./mcp.json
+klaus repl --mcp-config ~/.klaus/mcp-github.yaml --mcp-config ./mcp-db.json
+```
+
+Formatos aceptados:
+
+| Formato | Ejemplo |
+|---|---|
+| Lista con el formato de `mcp_servers` | `- name: fs` / `  command: [npx, -y, server-fs, /w]` |
+| Clave `mcp_servers` | `{"mcp_servers": [{"name": "fs", "command": ["npx", "server-fs"]}]}` |
+| Clave `mcpServers` (formato habitual de otros clientes MCP) | `{"mcpServers": {"fs": {"command": "npx", "args": ["server-fs"], "env": {}}}}` |
+
+- Se **suman** a los de `config.yaml`; si un nombre coincide, gana el del fichero.
+- `confirm` y `trust_read_only` también valen en el fichero (ver [✅ Confirmación](#-confirmación)).
+- Solo servidores **stdio** (con `command`). Las entradas remotas (`url`) se omiten con un aviso.
+- Un fichero inexistente o mal formado detiene Klaus con un error de configuración (código de salida 4).
 
 ---
 
