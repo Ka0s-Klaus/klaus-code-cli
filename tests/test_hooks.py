@@ -1,11 +1,10 @@
-"""Tests para Klaus.hooks — HookRunner."""
+"""Tests para klaus.hooks — HookRunner."""
 
 from __future__ import annotations
 
 import json
 import stat
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -28,7 +27,7 @@ def _make_script(directory: Path, filename: str, script_content: str) -> Path:
 class TestHookRunner:
     @pytest.mark.asyncio
     async def test_pre_tool_allows_when_no_hooks(self, tmp_path: Path) -> None:
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         runner = HookRunner(project_root=tmp_path)
         allowed = await runner.run_pre_tool("read_file", {"path": "test.py"})
@@ -36,7 +35,7 @@ class TestHookRunner:
 
     @pytest.mark.asyncio
     async def test_pre_tool_blocks_on_nonzero_exit(self, hooks_dir: Path, tmp_path: Path) -> None:
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         _make_script(hooks_dir, "PreToolUse.sh", "#!/bin/sh\nexit 1\n")
         runner = HookRunner(project_root=tmp_path)
@@ -48,7 +47,7 @@ class TestHookRunner:
 
     @pytest.mark.asyncio
     async def test_pre_tool_allows_on_zero_exit(self, hooks_dir: Path, tmp_path: Path) -> None:
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         _make_script(hooks_dir, "PreToolUse.sh", "#!/bin/sh\nexit 0\n")
         runner = HookRunner(project_root=tmp_path)
@@ -67,7 +66,7 @@ class TestHookRunner:
             f"#!/bin/sh\ncat > {received_file}\n",
         )
 
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         runner = HookRunner(project_root=tmp_path)
         runner._global_dir = hooks_dir
@@ -93,7 +92,7 @@ class TestHookRunner:
             f"#!/bin/sh\ntouch {flag}\n",
         )
 
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         runner = HookRunner(project_root=tmp_path)
         runner._global_dir = hooks_dir
@@ -104,7 +103,7 @@ class TestHookRunner:
     @pytest.mark.asyncio
     async def test_hooks_not_found_no_crash(self, tmp_path: Path) -> None:
         """Sin directorio de hooks, no debe lanzar excepción."""
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         runner = HookRunner(project_root=tmp_path)
         runner._global_dir = tmp_path / "no-existe"
@@ -120,7 +119,7 @@ class TestHookRunner:
             '#!/bin/sh\necho \'{"decision": "block"}\'\nexit 0\n',
         )
 
-        from Klaus.hooks import HookRunner
+        from klaus.hooks import HookRunner
 
         runner = HookRunner(project_root=tmp_path)
         runner._global_dir = hooks_dir

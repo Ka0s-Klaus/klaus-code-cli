@@ -151,6 +151,7 @@ Klaus-code-cli/
 | [🔧 Tools](docs/tools.md) | Las 11 tools integradas — cómo funcionan y cómo controlarlas |
 | [🔌 MCP](docs/mcp.md) | Integración de servidores MCP externos |
 | [🏗️ Architecture](docs/architecture.md) | Arquitectura interna — diagramas y módulos |
+| [🧪 Development](docs/development.md) | Entorno local, checks de CI y convenciones |
 
 ---
 
@@ -159,9 +160,8 @@ Klaus-code-cli/
 1. Fork del repositorio
 2. `git checkout -b feat/mi-feature`
 3. `pip install -e ".[dev]"` para instalar dependencias de desarrollo
-4. `pytest` para ejecutar tests
-5. `ruff check .` y `mypy Klaus/` para lint y tipado
-6. Pull request contra `main`
+4. `ruff check . && mypy . && pytest tests/ -q` — los mismos checks que el CI
+5. Pull request contra `main` (ver [🧪 Development](docs/development.md))
 
 ---
 

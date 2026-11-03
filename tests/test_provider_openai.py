@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from klaus.provider.openai_fmt import (
     _from_openai_response,
     _to_openai_messages,
     _to_openai_tools,
 )
-
 
 # ---------------------------------------------------------------------------
 # _to_openai_tools
@@ -313,3 +310,46 @@ def test_full_turn_round_trip():
     assert final_msgs[3]["role"] == "tool"
     assert final_msgs[3]["tool_call_id"] == "call_xyz"
     assert final_msgs[3]["content"] == "print(42)"
+
+
+# ── Regresión #54: stream_message debe aceptar on_thinking (contrato ProviderAdapter) ──
+
+
+async def test_stream_message_accepts_on_thinking() -> None:
+    """El REPL pasa on_thinking a todos los adaptadores; OpenAIAdapter no debe lanzar TypeError."""
+    import httpx
+
+    from klaus.config import KlausConfig
+    from klaus.provider.openai_fmt import OpenAIAdapter
+
+    chunks = [
+        {"choices": [{"delta": {"reasoning_content": "pensando"}}]},
+        {"choices": [{"delta": {"content": "hola"}}]},
+        {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        {"choices": [], "usage": {"prompt_tokens": 3, "completion_tokens": 1}},
+    ]
+    body = "".join(f"data: {json.dumps(c)}\n\n" for c in chunks) + "data: [DONE]\n\n"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=body, headers={"content-type": "text/event-stream"})
+
+    adapter = OpenAIAdapter(KlausConfig())
+    await adapter._client.aclose()
+    adapter._client = httpx.AsyncClient(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    )
+
+    tokens: list[str] = []
+    thinking: list[str] = []
+    try:
+        result = await adapter.stream_message(
+            messages=[{"role": "user", "content": "hi"}],
+            on_token=tokens.append,
+            on_thinking=thinking.append,
+        )
+    finally:
+        await adapter.close()
+
+    assert tokens == ["hola"]
+    assert thinking == ["pensando"]
+    assert adapter.extract_text(result) == "hola"

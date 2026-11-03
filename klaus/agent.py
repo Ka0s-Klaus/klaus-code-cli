@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.live import Live
@@ -21,6 +21,9 @@ from .mcp.client import MCPRegistry
 from .provider.base import ProviderAdapter
 from .pseudonymizer_config import configure_pseudonymizer
 from .tools import TOOL_HANDLERS, TOOL_SCHEMAS, configure_confirmations
+
+if TYPE_CHECKING:
+    from .hooks import HookRunner
 
 console = Console()
 
@@ -248,7 +251,7 @@ async def _dispatch_tool(
     config: KlausConfig,
     cwd: Path,
     handlers: dict[str, Any] | None = None,
-    hook_runner: "HookRunner | None" = None,
+    hook_runner: HookRunner | None = None,
     session_id: str = "",
 ) -> Any:
     """Despacha una tool call al handler correspondiente, con hooks opcionales."""

@@ -141,7 +141,7 @@ def _remove_memory(name: str) -> None:
         index_path = memory_dir / "MEMORY.md"
         if index_path.exists():
             lines = index_path.read_text(encoding="utf-8").splitlines(keepends=True)
-            new_lines = [l for l in lines if name not in l]
+            new_lines = [line for line in lines if name not in line]
             index_path.write_text("".join(new_lines), encoding="utf-8")
     except OSError as e:
         console.print(f"[red]Error eliminando memoria: {e}[/red]")
@@ -323,7 +323,7 @@ async def _repl_loop(
     custom_commands: dict[str, str] | None = None,
 ) -> int:
     """Loop principal del REPL."""
-    from .sessions import list_checkpoints, save_checkpoint
+    from .sessions import save_checkpoint
     from .tools.memory import print_memory_list
     from .tools.todo import get_todos_for_display
 

@@ -177,8 +177,12 @@ class OpenAIAdapter(ProviderAdapter):
         tools: list[dict[str, Any]] | None = None,
         system: str | None = None,
         on_token: Callable[[str], None] | None = None,
+        on_thinking: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
-        """Stream tokens via SSE (OpenAI format). Fallback a send_message en error."""
+        """Stream tokens via SSE (OpenAI format). Fallback a send_message en error.
+
+        on_thinking recibe `reasoning_content` (vLLM/DeepSeek/LiteLLM) si el servidor lo envía.
+        """
         payload: dict[str, Any] = {
             "model": self._config.provider.model,
             "max_tokens": self._config.provider.max_tokens,
@@ -221,6 +225,10 @@ class OpenAIAdapter(ProviderAdapter):
                         continue
                     choice = choices[0]
                     delta = choice.get("delta", {})
+
+                    thinking = delta.get("reasoning_content") or ""
+                    if thinking and on_thinking:
+                        on_thinking(thinking)
 
                     token = delta.get("content") or ""
                     if token:

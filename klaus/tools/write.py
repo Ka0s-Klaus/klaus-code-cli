@@ -4,7 +4,7 @@ Todas las operaciones muestran una preview/diff antes de ejecutar
 y piden confirmación interactiva al usuario.
 
 Desactivar confirmación globalmente (modo --yolo futuro):
-    import Klaus.tools.write as wt; wt.CONFIRM_WRITES = False
+    import klaus.tools.write as wt; wt.CONFIRM_WRITES = False
 """
 
 from __future__ import annotations
