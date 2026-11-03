@@ -8,7 +8,7 @@
 
 **¿Qué hago:** Describo el modelo de amenazas de Klaus y las barreras que lo limitan: workspace, confirmaciones, denylist y allowlist de bash, confianza en hooks y sub-agentes.
 
-**¿Cómo lo hago:** Cada barrera está en una capa distinta (tools, despacho, hooks), y su configuración vive en la sección `security` de `~/.Klaus/config.yaml`. La política se fija al arrancar `klaus run` / `klaus repl` y la heredan los sub-agentes.
+**¿Cómo lo hago:** Cada barrera está en una capa distinta (tools, despacho, hooks), y su configuración vive en la sección `security` de `~/.klaus/config.yaml`. La política se fija al arrancar `klaus run` / `klaus repl` y la heredan los sub-agentes.
 
 **¿Para qué lo hago:** Un agente que lee ficheros, escribe código y ejecuta comandos actúa con **tus permisos**. El modelo puede equivocarse o ser manipulado por contenido que lee (prompt injection en un README, un issue o una web). Las barreras acotan el daño posible en ambos casos.
 
@@ -22,7 +22,7 @@
 | El modelo escribe o borra fuera del proyecto | `write_file("~/.bashrc")` | 📁 Workspace |
 | Comando destructivo por error | `rm -rf build /` (espacio de más) | 🧱 Denylist + ✅ confirmación |
 | Comando arbitrario en modo desatendido | `--yolo` en CI ejecutando lo que pida el modelo | 📋 Allowlist de bash |
-| Un repo clonado ejecuta código al usar Klaus | `.Klaus/hooks/PreToolUse` malicioso | 🪝 Confianza en hooks |
+| Un repo clonado ejecuta código al usar Klaus | `.klaus/hooks/PreToolUse` malicioso | 🪝 Confianza en hooks |
 | Eludir confirmaciones o hooks delegando en un sub-agente | `spawn_agent("escribe ~/.bashrc")` | 🤖 Sub-agentes heredan la política |
 | Datos personales hacia modelos externos | Rutas y username en el prompt | 🔒 [Pseudonymizer](configuration.md#-sección-pseudonymizer) |
 
@@ -66,11 +66,11 @@ Cualquier otro comando se confirma con el usuario, o se **rechaza** si no hay TT
 
 ### 🪝 Confianza en hooks de proyecto
 
-Los hooks de `~/.Klaus/hooks/` son tuyos y se ejecutan siempre. Los de `<proyecto>/.Klaus/hooks/` vienen con el repositorio, así que pueden ser de un tercero:
+Los hooks de `~/.klaus/hooks/` son tuyos y se ejecutan siempre. Los de `<proyecto>/.klaus/hooks/` vienen con el repositorio, así que pueden ser de un tercero:
 
 | `project_hooks` | Comportamiento |
 |---|---|
-| `ask` (default) | La primera vez pregunta y muestra los ficheros. La confianza se guarda en `~/.Klaus/trusted_hooks.json` asociada al **hash** del contenido: cualquier cambio vuelve a preguntar. Sin TTY no se ejecutan |
+| `ask` (default) | La primera vez pregunta y muestra los ficheros. La confianza se guarda en `~/.klaus/trusted_hooks.json` asociada al **hash** del contenido: cualquier cambio vuelve a preguntar. Sin TTY no se ejecutan |
 | `trust` | Siempre se ejecutan. Solo para repos propios en CI |
 | `never` | Nunca se ejecutan |
 

@@ -4,7 +4,7 @@
 
 **¿Qué hago?** Personalizar el comportamiento de Klaus Code CLI — proveedor, modelo, confirmaciones, sesiones, límites de contexto y servidores MCP.
 
-**¿Cómo lo hago?** Editando `~/.Klaus/config.yaml` (generado por `Klaus init`) o pasando flags en cada invocación de CLI.
+**¿Cómo lo hago?** Editando `~/.klaus/config.yaml` (generado por `klaus init`) o pasando flags en cada invocación de CLI.
 
 **¿Para qué lo hago?** Para adaptar Klaus a cualquier entorno — desarrollo local con klaude-proxy, staging con otro proxy compatible — y para controlar el nivel de autonomía del agente según el contexto.
 
@@ -13,10 +13,14 @@
 ## 📁 Ubicación del fichero de config
 
 ```
-~/.Klaus/config.yaml
+~/.klaus/config.yaml
 ```
 
-Creado automáticamente por `Klaus init`. Si no existe, Klaus usa los valores por defecto de cada sección.
+Creado automáticamente por `klaus init`. Si no existe, Klaus usa los valores por defecto de cada sección.
+
+> ♻️ **Migración desde `~/.Klaus`:** si solo existe el directorio con el nombre anterior, Klaus lo sigue usando y avisa al arrancar con el comando exacto para renombrarlo (`mv ~/.Klaus ~/.klaus`). Lo mismo con `<proyecto>/.Klaus`. Klaus nunca mueve tus datos automáticamente. En macOS (sistema de ficheros sin distinción de mayúsculas) ambos nombres son el mismo directorio y no hay nada que hacer.
+>
+> La clave `context.max_Klaus_md_tokens` se renombra a `max_klaus_md_tokens`; la anterior se acepta con aviso.
 
 ---
 
@@ -28,23 +32,31 @@ Klaus Code CLI se diseñó para conectarse exclusivamente a **klaude-proxy** —
 
 | Variable | Descripción | Ejemplo |
 | --- | --- | --- |
-| `KLAUDE_PROXY_URL` | URL completa del proxy, incluyendo `/v1` | `http://192.168.1.50:8080/v1` |
-| `KLAUDE_API_KEY` | API key enviada al proxy como `x-api-key` | `sk-ant-api03-...` |
+| `KLAUS_PROXY_URL` | URL completa del proxy, incluyendo `/v1` | `http://192.168.1.50:8080/v1` |
+| `KLAUS_API_KEY` | API key enviada al proxy como `x-api-key` | `sk-ant-api03-...` |
 
 > 🔑 **Estas dos variables son responsabilidad del usuario** — no se definen en el config.yaml por motivos de seguridad. Cada entorno tiene su propio proxy y su propia key.
+
+Otras variables: `KLAUS_MODEL` y `KLAUS_API_FORMAT` (sobrescriben `provider.model` y `provider.api_format`).
+
+> ♻️ **Migración desde `KLAUDE_*`:** los nombres anteriores (`KLAUDE_PROXY_URL`, `KLAUDE_API_KEY`, `KLAUDE_MODEL`, `KLAUDE_API_FORMAT`) siguen funcionando, con un aviso de obsolescencia. Si están definidos los dos, gana `KLAUS_*`. Renómbralos en tu shell:
+>
+> ```bash
+> sed -i.bak -E 's/KLAUDE_(PROXY_URL|API_KEY|MODEL|API_FORMAT)/KLAUS_\1/g' ~/.zshrc
+> ```
 
 ### Configuración mínima
 
 ```bash
 # En ~/.bashrc, ~/.zshrc o el entorno de tu shell
-export KLAUDE_PROXY_URL="http://192.168.1.50:8080/v1"
-export KLAUDE_API_KEY="sk-ant-api03-..."
+export KLAUS_PROXY_URL="http://192.168.1.50:8080/v1"
+export KLAUS_API_KEY="sk-ant-api03-..."
 ```
 
 ### Prioridad de configuración
 
 ```
-KLAUDE_PROXY_URL (env) > config.yaml > default (localhost:8080/v1)
+KLAUS_PROXY_URL (env) > config.yaml > default (localhost:8080/v1)
       │                       │                │
   más alta                  media           más baja
 ```
@@ -52,13 +64,13 @@ KLAUDE_PROXY_URL (env) > config.yaml > default (localhost:8080/v1)
 ```mermaid
 flowchart LR
     CLI["--base-url flag"] --> MRG["Merge final"]
-    ENV["KLAUDE_PROXY_URL\nenv var"] --> MRG
-    YAML["~/.Klaus/config.yaml\nbase_url"] --> MRG
+    ENV["KLAUS_PROXY_URL\nenv var"] --> MRG
+    YAML["~/.klaus/config.yaml\nbase_url"] --> MRG
     DEF["Default\nlocalhost:8080/v1"] --> MRG
     MRG --> CFG["KlausConfig.provider.base_url"]
 ```
 
-> CLI flag > KLAUDE_PROXY_URL > config.yaml > default
+> CLI flag > KLAUS_PROXY_URL > config.yaml > default
 
 ---
 
@@ -69,11 +81,11 @@ Configura el proveedor de IA y el modelo.
 ```yaml
 provider:
   # URL base de klaude-proxy (incluye /v1).
-  # Sobreescribible sin tocar este fichero: export KLAUDE_PROXY_URL="http://<host>:8080/v1"
+  # Sobreescribible sin tocar este fichero: export KLAUS_PROXY_URL="http://<host>:8080/v1"
   base_url: "http://localhost:8080/v1"
   # Nombre de la variable de entorno con la API key.
-  # Sobreescribible: export KLAUDE_API_KEY="sk-ant-..."
-  api_key_env: "KLAUDE_API_KEY"
+  # Sobreescribible: export KLAUS_API_KEY="sk-ant-..."
+  api_key_env: "KLAUS_API_KEY"
   api_format: "anthropic"                # Formato de API: "anthropic" | "openai"
   model: "claude-haiku-4-5-20251001"     # Modelo por defecto
   max_tokens: 4096                       # Máximo de tokens en la respuesta
@@ -129,7 +141,7 @@ Gestiona la persistencia del historial de conversación entre sesiones.
 
 ```yaml
 session:
-  storage_path: "~/.Klaus/sessions/"  # Directorio donde se guardan las sesiones
+  storage_path: "~/.klaus/sessions/"  # Directorio donde se guardan las sesiones
   persist: true                        # Guardar sesión en disco por defecto
   lock_enabled: true                   # File lock para prevenir escrituras concurrentes
 ```
@@ -145,7 +157,7 @@ context:
   max_context_tokens: 100000    # Límite de tokens de contexto
   auto_compact: true            # Compactar automáticamente al llegar al 80% del límite
   max_file_read_lines: 2000     # Líneas máximas al leer un fichero
-  max_Klaus_md_tokens: 4000     # Tokens máximos para CLAUS.md inyectado como contexto
+  max_klaus_md_tokens: 4000     # Tokens máximos para KLAUS.md inyectado como contexto
 ```
 
 ### Cómo funciona el auto-compact
@@ -231,7 +243,7 @@ Límites del agente. El detalle y el modelo de amenazas están en [🔐 Security
 security:
   allowed_paths: []            # Directorios extra (además del proyecto) para las tools de ficheros
   outside_workspace: "ask"     # "ask" (pregunta incluso en --yolo; sin TTY deniega) | "deny"
-  project_hooks: "ask"         # Hooks de <proyecto>/.Klaus/hooks: "ask" | "trust" | "never"
+  project_hooks: "ask"         # Hooks de <proyecto>/.klaus/hooks: "ask" | "trust" | "never"
   bash_allowlist: []           # Con bash auto-aprobado, solo estos prefijos corren sin preguntar
 ```
 
@@ -239,7 +251,7 @@ security:
 | --- | --- | --- |
 | `allowed_paths` | `[]` | Rutas (admiten `~`) accesibles además del proyecto |
 | `outside_workspace` | `ask` | Qué hacer con rutas fuera del workspace |
-| `project_hooks` | `ask` | Confianza por hash, guardada en `~/.Klaus/trusted_hooks.json` |
+| `project_hooks` | `ask` | Confianza por hash, guardada en `~/.klaus/trusted_hooks.json` |
 | `bash_allowlist` | `[]` | Vacío = sin filtro. Ej.: `["pytest", "ruff check", "git status"]` |
 
 ---

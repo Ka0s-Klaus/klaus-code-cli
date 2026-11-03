@@ -45,7 +45,7 @@
 | 🪝 **Hooks system** (PreToolUse / PostToolUse) | 🟧 Media | 🔴 Alto | 4 |
 | 💾 **Checkpoints** (save/restore estado) | 🟨 Baja | 🔴 Alto | 9 |
 | 🧠 **Memory system** (`/memory`, MEMORY.md) | 🟨 Baja | 🟡 Medio | 8 |
-| ⚡ **Custom slash commands** (`.Klaus/commands/`) | 🟨 Baja | 🟡 Medio | 7 |
+| ⚡ **Custom slash commands** (`.klaus/commands/`) | 🟨 Baja | 🟡 Medio | 7 |
 | 🖥️ **VS Code extension** | 🟨 Baja | 🔴 Muy alto | 10 |
 | 🖥️ **JetBrains plugin** | 🟨 Baja | 🔴 Muy alto | 10 |
 | 📓 **NotebookEdit** (Jupyter) | 🟨 Baja | 🟡 Medio | — |
@@ -83,12 +83,12 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 1.1 | 🔤 Slash commands REPL | `/clear`, `/help`, `/history`, `/model`, `/session`, `/tokens` | `Klaus/repl.py` |
-| 1.2 | 🔄 `--resume <session-id>` | Retomar sesión previa por ID desde CLI | `Klaus/cli.py`, `Klaus/session.py` |
-| 1.3 | 💰 Token/cost display | Mostrar tokens input/output y coste estimado al final de cada turno | `Klaus/streaming.py`, `Klaus/repl.py` |
-| 1.4 | 📁 Grep tool | Tool dedicado `bash_grep` que usa ripgrep/grep con output formateado | `Klaus/tools/grep.py` |
-| 1.5 | 📁 Glob tool | Tool dedicado `bash_glob` para búsqueda de ficheros por patrón | `Klaus/tools/glob.py` |
-| 1.6 | 📋 LS tool | Tool dedicado `bash_ls` que devuelve estructura de directorio | `Klaus/tools/ls.py` |
+| 1.1 | 🔤 Slash commands REPL | `/clear`, `/help`, `/history`, `/model`, `/session`, `/tokens` | `klaus/repl.py` |
+| 1.2 | 🔄 `--resume <session-id>` | Retomar sesión previa por ID desde CLI | `klaus/cli.py`, `klaus/session.py` |
+| 1.3 | 💰 Token/cost display | Mostrar tokens input/output y coste estimado al final de cada turno | `klaus/streaming.py`, `klaus/repl.py` |
+| 1.4 | 📁 Grep tool | Tool dedicado `bash_grep` que usa ripgrep/grep con output formateado | `klaus/tools/grep.py` |
+| 1.5 | 📁 Glob tool | Tool dedicado `bash_glob` para búsqueda de ficheros por patrón | `klaus/tools/glob.py` |
+| 1.6 | 📋 LS tool | Tool dedicado `bash_ls` que devuelve estructura de directorio | `klaus/tools/ls.py` |
 
 **Dependencias:** ninguna — todo es incremental sobre el core actual.
 
@@ -99,8 +99,8 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 2.1 | 🔍 WebFetch tool | `web_fetch(url)` — descarga y extrae texto de una URL (HTML→markdown) | `Klaus/tools/web.py` |
-| 2.2 | 🔍 WebSearch tool | `web_search(query)` — búsqueda web via DuckDuckGo API (sin key) o Brave API | `Klaus/tools/web.py` |
+| 2.1 | 🔍 WebFetch tool | `web_fetch(url)` — descarga y extrae texto de una URL (HTML→markdown) | `klaus/tools/web.py` |
+| 2.2 | 🔍 WebSearch tool | `web_search(query)` — búsqueda web via DuckDuckGo API (sin key) o Brave API | `klaus/tools/web.py` |
 
 **Dependencias:** httpx (ya presente), html2text o markdownify para extracción.
 
@@ -111,9 +111,9 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 3.1 | 📋 TodoWrite tool | Escribe/actualiza una lista de tareas en la sesión actual | `Klaus/tools/todo.py` |
-| 3.2 | 📋 TodoRead tool | Lee la lista de tareas actual y la devuelve al LLM | `Klaus/tools/todo.py` |
-| 3.3 | 📋 `/todos` slash cmd | Muestra la lista de tareas en el REPL | `Klaus/repl.py` |
+| 3.1 | 📋 TodoWrite tool | Escribe/actualiza una lista de tareas en la sesión actual | `klaus/tools/todo.py` |
+| 3.2 | 📋 TodoRead tool | Lee la lista de tareas actual y la devuelve al LLM | `klaus/tools/todo.py` |
+| 3.3 | 📋 `/todos` slash cmd | Muestra la lista de tareas en el REPL | `klaus/repl.py` |
 
 **Dependencias:** Fase 1 (slash commands).
 
@@ -124,12 +124,12 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 4.1 | 🪝 Hook loader | Carga hooks desde `~/.Klaus/hooks/` y `.Klaus/hooks/` (proyecto) | `Klaus/hooks.py` |
-| 4.2 | 🪝 PreToolUse | Ejecuta script antes de cada tool call; puede bloquear la ejecución | `Klaus/hooks.py`, `Klaus/agent.py` |
-| 4.3 | 🪝 PostToolUse | Ejecuta script después de cada tool call con el resultado | `Klaus/hooks.py`, `Klaus/agent.py` |
-| 4.4 | 🪝 PostToolUseError | Ejecuta script cuando un tool falla | `Klaus/hooks.py`, `Klaus/agent.py` |
-| 4.5 | 🪝 Stop hook | Ejecuta script cuando el agente completa su tarea | `Klaus/hooks.py` |
-| 4.6 | 🪝 Notification hook | Ejecuta script para notificaciones (desktop, Slack, etc.) | `Klaus/hooks.py` |
+| 4.1 | 🪝 Hook loader | Carga hooks desde `~/.klaus/hooks/` y `.klaus/hooks/` (proyecto) | `klaus/hooks.py` |
+| 4.2 | 🪝 PreToolUse | Ejecuta script antes de cada tool call; puede bloquear la ejecución | `klaus/hooks.py`, `klaus/agent.py` |
+| 4.3 | 🪝 PostToolUse | Ejecuta script después de cada tool call con el resultado | `klaus/hooks.py`, `klaus/agent.py` |
+| 4.4 | 🪝 PostToolUseError | Ejecuta script cuando un tool falla | `klaus/hooks.py`, `klaus/agent.py` |
+| 4.5 | 🪝 Stop hook | Ejecuta script cuando el agente completa su tarea | `klaus/hooks.py` |
+| 4.6 | 🪝 Notification hook | Ejecuta script para notificaciones (desktop, Slack, etc.) | `klaus/hooks.py` |
 
 **Dependencias:** ninguna sobre el core; precede a Sub-agents (Fase 5).
 
@@ -150,10 +150,10 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 5.1 | 🤖 Agent tool | `spawn_agent(prompt, model?, tools?)` — instancia subagente aislado | `Klaus/tools/agent.py` |
-| 5.2 | 🤖 Aislamiento de sesión | El subagente tiene su propio contexto/historial independiente | `Klaus/session.py` |
-| 5.3 | 🤖 Resultado compuesto | El resultado del subagente se devuelve al agente padre como texto | `Klaus/tools/agent.py` |
-| 5.4 | 🤖 Límite de recursión | Máximo de niveles de sub-agentes configurable (`max_agent_depth`) | `Klaus/config.py` |
+| 5.1 | 🤖 Agent tool | `spawn_agent(prompt, model?, tools?)` — instancia subagente aislado | `klaus/tools/agent.py` |
+| 5.2 | 🤖 Aislamiento de sesión | El subagente tiene su propio contexto/historial independiente | `klaus/session.py` |
+| 5.3 | 🤖 Resultado compuesto | El resultado del subagente se devuelve al agente padre como texto | `klaus/tools/agent.py` |
+| 5.4 | 🤖 Límite de recursión | Máximo de niveles de sub-agentes configurable (`max_agent_depth`) | `klaus/config.py` |
 
 **Dependencias:** Fase 4 (hooks para instrumentar sub-agents), Fase 1 (display de estado).
 
@@ -164,8 +164,8 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 6.1 | 🖼️ Image tool | `read_image(path)` — carga imagen como base64 y la añade al contexto | `Klaus/tools/image.py` |
-| 6.2 | 🖼️ Paste en REPL | Detectar imagen en clipboard y añadirla al mensaje actual | `Klaus/repl.py` |
+| 6.1 | 🖼️ Image tool | `read_image(path)` — carga imagen como base64 y la añade al contexto | `klaus/tools/image.py` |
+| 6.2 | 🖼️ Paste en REPL | Detectar imagen en clipboard y añadirla al mensaje actual | `klaus/repl.py` |
 | 6.3 | 🖼️ Traducción proxy | Asegurar que klaude-proxy pasa bloques `image` correctamente a Anthropic | `klaude-proxy: proxy/main.py` |
 
 **Dependencias:** Pillow / base64 stdlib; compatibilidad en klaude-proxy (PR separada).
@@ -173,13 +173,13 @@ Baja      │          │ Custom   │ Checkp.  │
 ---
 
 ### 🟡 Fase 7 — Custom slash commands (Sprint 4)
-**Objetivo:** el usuario puede definir comandos propios en `.Klaus/commands/` que Klaus ejecuta al invocarlos con `/`.
+**Objetivo:** el usuario puede definir comandos propios en `.klaus/commands/` que Klaus ejecuta al invocarlos con `/`.
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 7.1 | 📂 Command discovery | Escanear `~/.Klaus/commands/` y `.Klaus/commands/` al arrancar | `Klaus/repl.py` |
-| 7.2 | 📂 Command execution | Ejecutar el comando (markdown con prompt o script) al invocar `/nombre` | `Klaus/repl.py` |
-| 7.3 | 📂 Argumento `$ARGUMENTS` | Pasar argumentos al comando vía variable `$ARGUMENTS` | `Klaus/repl.py` |
+| 7.1 | 📂 Command discovery | Escanear `~/.klaus/commands/` y `.klaus/commands/` al arrancar | `klaus/repl.py` |
+| 7.2 | 📂 Command execution | Ejecutar el comando (markdown con prompt o script) al invocar `/nombre` | `klaus/repl.py` |
+| 7.3 | 📂 Argumento `$ARGUMENTS` | Pasar argumentos al comando vía variable `$ARGUMENTS` | `klaus/repl.py` |
 
 **Dependencias:** Fase 1 (slash commands base).
 
@@ -190,10 +190,10 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 8.1 | 🧠 Memory tool | `memory_write(slug, content, type)` / `memory_read(query)` | `Klaus/tools/memory.py` |
-| 8.2 | 🧠 `/memory` REPL cmd | `/memory list` / `/memory add` / `/memory remove` | `Klaus/repl.py` |
-| 8.3 | 🧠 MEMORY.md index | Auto-actualización del índice en `~/.Klaus/memory/MEMORY.md` | `Klaus/tools/memory.py` |
-| 8.4 | 🧠 Inyección en contexto | Las memorias relevantes se inyectan en el system prompt | `Klaus/context.py` |
+| 8.1 | 🧠 Memory tool | `memory_write(slug, content, type)` / `memory_read(query)` | `klaus/tools/memory.py` |
+| 8.2 | 🧠 `/memory` REPL cmd | `/memory list` / `/memory add` / `/memory remove` | `klaus/repl.py` |
+| 8.3 | 🧠 MEMORY.md index | Auto-actualización del índice en `~/.klaus/memory/MEMORY.md` | `klaus/tools/memory.py` |
+| 8.4 | 🧠 Inyección en contexto | Las memorias relevantes se inyectan en el system prompt | `klaus/context.py` |
 
 **Dependencias:** Fase 1 (slash commands); sistema de ficheros de memoria (ya existe en K*).
 
@@ -204,9 +204,9 @@ Baja      │          │ Custom   │ Checkp.  │
 
 | # | Feature | Descripción | Archivo destino |
 | --- | --- | --- | --- |
-| 9.1 | 💾 `/checkpoint` cmd | Guarda snapshot de la sesión actual con timestamp | `Klaus/repl.py`, `Klaus/session.py` |
-| 9.2 | 💾 `--restore <id>` | Restaura conversación desde un checkpoint específico | `Klaus/cli.py`, `Klaus/session.py` |
-| 9.3 | 💾 `/checkpoints list` | Lista checkpoints disponibles de la sesión actual | `Klaus/repl.py` |
+| 9.1 | 💾 `/checkpoint` cmd | Guarda snapshot de la sesión actual con timestamp | `klaus/repl.py`, `klaus/session.py` |
+| 9.2 | 💾 `--restore <id>` | Restaura conversación desde un checkpoint específico | `klaus/cli.py`, `klaus/session.py` |
+| 9.3 | 💾 `/checkpoints list` | Lista checkpoints disponibles de la sesión actual | `klaus/repl.py` |
 
 **Dependencias:** sesión persistente (ya implementado).
 
@@ -300,7 +300,7 @@ flowchart TD
 | 🤖 **Multi-provider real** (Anthropic + Ollama) | Claude Code solo soporta Anthropic. Klaus puede usar modelos locales sin coste y con privacidad total. |
 | 🧠 **Thinking models nativos** (qwen3, deepseek-r1) | Panel "🧠 Razonando..." en tiempo real. Claude Code no expone el reasoning de terceros. |
 | 💾 **klaude-proxy con caché Qdrant** | Reduce coste en respuestas repetitivas vía caché vectorial semántica. Invisible para el usuario, transparente para el LLM. |
-| 🔑 **KLAUDE_API_KEY independiente** | La key del proxy puede ser diferente a la de Anthropic — permite billing controlado y multi-tenant. |
+| 🔑 **KLAUS_API_KEY independiente** | La key del proxy puede ser diferente a la de Anthropic — permite billing controlado y multi-tenant. |
 | 📊 **Analytics dashboard** | El proxy registra cada llamada para análisis de uso, coste y calidad. Claude Code no tiene dashboar propio. |
 
 ---

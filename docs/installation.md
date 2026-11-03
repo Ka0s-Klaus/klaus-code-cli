@@ -26,14 +26,14 @@
 ### Opción A — PyPI (recomendada)
 
 ```bash
-pip install Klaus-code-cli
+pip install klaus-code-cli
 ```
 
 ### Opción B — desde source (desarrollo)
 
 ```bash
-git clone https://github.com/Ka0s-Klaus/Klaus-code-cli.git
-cd Klaus-code-cli
+git clone https://github.com/Ka0s-klaus/klaus-code-cli.git
+cd klaus-code-cli
 pip install -e ".[dev]"
 ```
 
@@ -42,9 +42,9 @@ El grupo `dev` incluye: `pytest`, `pytest-asyncio`, `ruff`, `mypy`.
 ### Opción C — con `uv` (más rápido)
 
 ```bash
-uv pip install Klaus-code-cli
+uv pip install klaus-code-cli
 # O en un virtualenv aislado:
-uv run --with Klaus-code-cli Klaus run "hola"
+uv run --with klaus-code-cli klaus run "hola"
 ```
 
 ---
@@ -54,10 +54,10 @@ uv run --with Klaus-code-cli Klaus run "hola"
 ### 1️⃣ Generar config por defecto
 
 ```bash
-Klaus init
+klaus init
 ```
 
-Crea `~/.Klaus/config.yaml` con todos los valores por defecto. El fichero es seguro para editar — sin credenciales embebidas.
+Crea `~/.klaus/config.yaml` con todos los valores por defecto. El fichero es seguro para editar — sin credenciales embebidas.
 
 ### 2️⃣ Configurar la API key
 
@@ -78,7 +78,7 @@ Añadir al `.bashrc` / `.zshrc` para que persista entre sesiones.
 
 ### 3️⃣ Apuntar al proveedor
 
-Editar `~/.Klaus/config.yaml`:
+Editar `~/.klaus/config.yaml`:
 
 ```yaml
 provider:
@@ -101,8 +101,8 @@ provider:
 ### 4️⃣ Verificar
 
 ```bash
-Klaus config show
-Klaus run "di hola" --no-stream
+klaus config show
+klaus run "di hola"
 ```
 
 ---
@@ -110,10 +110,10 @@ Klaus run "di hola" --no-stream
 ## 🔍 Escaneo automático del proyecto
 
 ```bash
-Klaus init --scan
+klaus init --scan
 ```
 
-Analiza el proyecto en el directorio actual y genera un fichero `CLAUS.md` con el contexto del proyecto — estructura, stack, convenciones detectadas. Este fichero se inyecta automáticamente como contexto del sistema en cada sesión.
+Analiza el proyecto en el directorio actual y genera un fichero `KLAUS.md` con el contexto del proyecto — estructura, stack, convenciones detectadas. Este fichero se inyecta automáticamente como contexto del sistema en cada sesión.
 
 ---
 

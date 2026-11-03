@@ -5,124 +5,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] — Fix: corrección del bucle del agente
+## [Unreleased]
 
-### Fixed
-- `klaus/agent.py` · `_dispatch_tool`: el handler se invoca **una sola vez**. Antes, un `TypeError` lanzado *dentro* de una tool provocaba un segundo intento sin `cwd`: efectos duplicados (escrituras, bash) y en otro directorio. Ahora `cwd` solo se pasa si la firma lo acepta (`inspect.signature`, siguiendo decoradores)
-- `_dispatch_tool`: los parámetros requeridos se validan contra los **schemas activos** (built-in + MCP), no solo los built-in. Parámetro `schemas=` en run, repl y `spawn_agent`
-- `_dispatch_tool`: los parámetros que el handler no acepta devuelven un error accionable con la lista de parámetros válidos, en vez de un `TypeError` críptico
-- **Conteo de contexto**: el % y la auto-compactación usan el `input_tokens` de la última respuesta (el tamaño real del contexto). Antes se sumaban todos los turnos: el % pasaba del 100 % y se compactaba antes de tiempo. La línea de estado separa `contexto` y `consumo`
-- `klaus/repl.py`: compactar ya no pone a 0 el consumo del turno (falseaba `/tokens`), y la compactación también se evalúa en turnos sin tools
-- `klaus/context.py` · `compact_messages`: no deja `tool_result` huérfanos al inicio de la ventana (la API respondía 400)
-- `DEFAULT_CONFIG_YAML` (`klaus init`): `timeout_seconds` 120 → 600 (como el modelo) y añadido `max_agent_depth`
-
-### Added
-- `tests/test_agent_loop.py`: 14 tests, incluido uno que compara el YAML por defecto con el modelo Pydantic completo
-- `docs/configuration.md` (auto-compact, `max_agent_depth`), `docs/architecture.md` (`_dispatch_tool`), `docs/usage.md` (`/tokens` = consumo)
-
-**Issue:** [#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57)
-
----
-
-## [Unreleased] — Security: workspace, run_bash, hooks y sub-agentes
+> Agrupa todo lo fusionado desde la Fase 15. Las versiones `0.x` anteriores son fases de desarrollo: nunca se etiquetaron ni publicaron (ver [🧪 Development](docs/development.md#-release)).
 
 ### Security
-- **Workspace** (`klaus/security.py`): `read_file`, `list_directory`, `glob_search`, `grep_search`, `write_file`, `edit_file`, `delete_file` y `read_image` solo operan dentro del proyecto + `security.allowed_paths`. Se resuelven `~`, `..` y symlinks. Las rutas exteriores se preguntan (también en `--yolo`), o se deniegan sin TTY
-- `glob_search` / `grep_search` descartan resultados fuera del workspace (patrones `..`, symlinks)
-- `_dispatch_tool`: el argumento `cwd` enviado por el modelo se descarta. Antes, el fallback por `TypeError` lo pasaba al handler y permitía salir del proyecto
-- **Sub-agentes**: `spawn_agent` ya no fuerza la auto-aprobación de escrituras y bash. Antes, delegar en un sub-agente evitaba las confirmaciones y además **las desactivaba para el resto de la sesión del padre**
-- **Sub-agentes**: sus tools pasan por `_dispatch_tool` (validación + hooks PreToolUse/PostToolUse). Antes, un hook de protección se eludía delegando. El `cwd` del sub-agente debe estar dentro del workspace
-- **Hooks de proyecto**: requieren confianza explícita, guardada por hash en `~/.Klaus/trusted_hooks.json` y renovada si cambian. Sin TTY no se ejecutan. Política `security.project_hooks`: `ask` | `trust` | `never`
-- Hooks ejecutados con `asyncio.create_subprocess_exec` (ya no bloquean el event loop)
-- **run_bash**: denylist ampliada (`rm -r -f`, `--recursive --force`, `find / -delete`, pipe a shell, `$(… base64 -d)`, `eval $(…)`, escritura en `~/.ssh`, `chmod -R 777 /`, discos nvme/macOS) y fork bomb real detectada. Documentada como *best effort*
-- **run_bash**: `security.bash_allowlist` para modo desatendido. Con bash auto-aprobado, lo que no sea un comando simple con prefijo permitido se confirma, o se rechaza sin TTY
+- **Workspace**: las tools de ficheros (`read_file`, `list_directory`, `glob_search`, `grep_search`, `write_file`, `edit_file`, `delete_file`, `read_image`) solo operan dentro del proyecto + `security.allowed_paths`. Se resuelven `~`, `..` y symlinks; fuera, se pregunta (también en `--yolo`) o se deniega sin TTY ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- **Sub-agentes**: `spawn_agent` ya no fuerza la auto-aprobación (antes evitaba las confirmaciones y las desactivaba para el padre el resto de la sesión), pasa por `_dispatch_tool` (hooks + validación) y valida su `cwd` ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- `_dispatch_tool` descarta el argumento `cwd` enviado por el modelo ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- **Hooks de proyecto**: requieren confianza explícita, por hash, en `~/.klaus/trusted_hooks.json`; se ejecutan de forma asíncrona ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- **run_bash**: denylist ampliada (*best effort*) y `security.bash_allowlist` para modo desatendido ([#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
+- **Pseudonymizer**: aplicado en `run`, `repl`, `/model` y `spawn_agent`; los modelos LiteLLM externos ya no se tratan como locales; se espera antes de la primera petición; con un proveedor directo no se envían los literales al tercero ([#55](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/55))
 
 ### Added
-- `klaus/config.py`: sección `security` (`allowed_paths`, `outside_workspace`, `project_hooks`, `bash_allowlist`)
-- `tests/test_security.py`: 65 tests (traversal, symlinks, YOLO, evasiones de denylist, allowlist, confianza en hooks, sub-agentes)
-- `docs/security.md`: modelo de amenazas, barreras, configuración por entorno y limitaciones
+- **Paridad de funcionalidades (fases 1-9)**: `/model`, `--resume`, `web_fetch`/`web_search`, `todo_write`/`todo_read` + `/todos`, hooks Pre/PostToolUse/Stop/Notification, `spawn_agent`, `read_image`, comandos slash personalizados, `memory_write`/`memory_read` + `/memory`, checkpoints + `--restore` ([#46](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/46))
+- Bloques de razonamiento (*thinking*) en tiempo real para modelos reasoning ([#44](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/44))
+- Integración con la API de configuración dinámica del pseudonymizer de klaude-proxy ([#53](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/53))
+- Directorio de trabajo inyectado en el system prompt ([#40](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/40))
+- Variables de entorno del proxy (`KLAUS_PROXY_URL`, `KLAUS_MODEL`, `KLAUS_API_FORMAT`) ([#37](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/37), renombradas en [#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
+- REPL: `/tokens`, indicador de modo YOLO ([#32](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/32))
+- Secciones de config `pseudonymizer` y `security`
+- `klaus/compat.py`: avisos de obsolescencia para nombres anteriores ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
+- Workflow de release: verifica que el tag coincide con la versión de `pyproject.toml` ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
+- Documentación: `docs/security.md`, `docs/development.md` (CI y release), `CONTRIBUTING.md`; README reescrito según `DOCUMENTATION_STYLE.md`
+- Tests: de 41 a más de 250 (seguridad, pseudonymizer, bucle del agente, compatibilidad)
 
 ### Changed
-- `docs/mcp.md`: corregido. Las tools MCP **no** piden confirmación (la documentación decía lo contrario)
-- `docs/tools.md`, `docs/configuration.md`, `docs/architecture.md`, `README.md`: alineados con lo anterior
+- **Nombres unificados en `klaus`** ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58)): `~/.klaus/`, `<proyecto>/.klaus/`, variables `KLAUS_*`, clave `context.max_klaus_md_tokens`, comando `klaus` en toda la documentación
+- `klaus init --scan` genera `KLAUS.md` (antes `CLAUS.md`, que el contexto **no cargaba**) ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
+- Versión con fuente única en `pyproject.toml` (`0.15.0`); `klaus.__version__` se lee de los metadatos ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))
+- `network.timeout_seconds`: 120 → 600 para modelos thinking ([#42](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/42))
+- `KLAUS_API_KEY` opcional (no requerida con klaude-proxy) ([#40](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/40))
+- Estado de contexto: la línea `📊` separa **contexto** actual y **consumo** acumulado ([#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57))
 
-**Issue:** [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56)
-
----
-
-## [Unreleased] — Fix: pseudonymizer en todos los caminos hacia el modelo
-
-### Fixed
-- `klaus/pseudonymizer_config.py`: los modelos LiteLLM externos (`openai/gpt-4o`, `anthropic/...`) se trataban como locales por contener `/` y no se seudonimizaban. Ahora solo es local lo que coincide con `pseudonymizer.local_models`
-- `klaus/repl.py`: `klaus repl` nunca configuraba el pseudonymizer. Ahora lo hace al arrancar y en cada `/model`
-- `klaus/tools/subagent.py`: `spawn_agent(model=...)` configura el pseudonymizer para el modelo del sub-agente
-- `klaus/agent.py`: la configuración se **espera** antes de la primera petición (antes era fire-and-forget, con riesgo de carrera y de que el GC eliminara la tarea)
-- Con `base_url` apuntando a la API pública de un proveedor, ya **no se envían** ruta, home y username al endpoint `/pseudonymizer/config` de ese tercero
-
-### Added
-- `klaus/config.py`: sección `pseudonymizer` (`enabled`, `required`, `local_models`, `timeout_seconds`)
-- `pseudonymizer.required: true`: aborta si no se puede garantizar la seudonimización
-- `tests/test_pseudonymizer_config.py`: 42 tests (heurística, timeout, caché, required, y los caminos run / repl / `/model` / `spawn_agent`)
-- `docs/configuration.md`: sección 🔒 `pseudonymizer`, con matriz de comportamiento ante fallos y recomendación para despliegues con cliente
-
-**Files:** `klaus/pseudonymizer_config.py`, `klaus/config.py`, `klaus/agent.py`, `klaus/repl.py`, `klaus/tools/subagent.py`, `tests/`, `docs/configuration.md`, `CHANGELOG.md`
-**Issue:** [#55](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/55)
-
----
-
-## [Unreleased] — Fix: CI verde en main
+### Deprecated
+- Variables `KLAUDE_PROXY_URL`, `KLAUDE_API_KEY`, `KLAUDE_MODEL`, `KLAUDE_API_FORMAT` → `KLAUS_*` (siguen funcionando, con aviso)
+- Directorios `~/.Klaus/` y `<proyecto>/.Klaus/` → `.klaus/` (se usan si son los únicos; se avisa con el comando `mv`)
+- Clave `context.max_Klaus_md_tokens` → `max_klaus_md_tokens`
 
 ### Fixed
-- `tests/`: imports y `patch()` actualizados de `Klaus` a `klaus` tras el renombrado del paquete (causa de 28 fallos y 21 errores)
-- `tests/test_config.py`: alineados con las env vars reales `KLAUDE_API_KEY` / `KLAUDE_MODEL`
-- `klaus/mcp/client.py`: compatibilidad con `mcp` 2.x (`input_schema`) y 1.x (`inputSchema`). Con la 2.x, el arranque de servidores MCP fallaba con `AttributeError`
-- `klaus/provider/openai_fmt.py`: `stream_message` acepta `on_thinking` según el contrato de `ProviderAdapter`. El streaming del REPL con `api_format: openai` fallaba con `TypeError`. Ahora además emite `reasoning_content` si el servidor lo envía
-- `klaus/tools/image.py`: el portapapeles con ficheros (lista de rutas) devuelve un error claro; `Image.Resampling.LANCZOS`
-- `klaus/agent.py`, `klaus/tools/subagent.py`: imports solo de tipado bajo `TYPE_CHECKING`
-- 18 errores de ruff (imports, `UP017`, `E741`, `E402`) y 6 de mypy
-
-### Added
-- `tests/conftest.py`: fixture `isolate_env` que aísla los tests de las variables `KLAUDE_*` del entorno
-- `tests/test_mcp_client.py` y test de streaming con `on_thinking` en `tests/test_provider_openai.py` (regresiones)
-- `docs/development.md`: guía para reproducir el CI en local, convenciones y flujo de contribución
-
-**Files:** `klaus/`, `tests/`, `docs/development.md`, `README.md`, `CHANGELOG.md`
-**Issue:** [#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54)
-
----
-
-## [Unreleased] — Feat: KLAUDE_PROXY_URL
-
-### Added
-- `Klaus/config.py`: env var `KLAUDE_PROXY_URL` — URL del proxy klaude, sobreescribe `base_url` sin tocar `config.yaml`
-- `Klaus/config.py`: env vars `KLAUDE_MODEL` y `KLAUDE_API_FORMAT` — consistencia de naming con `KLAUDE_PROXY_URL`
-- `docs/configuration.md`: sección **🤖 Integración con klaude-proxy** — documenta `KLAUDE_PROXY_URL`, `KLAUDE_API_KEY`, prioridad de configuración y flowchart Mermaid
-- `Klaus/config.py`: comentarios inline en `DEFAULT_CONFIG_YAML` sobre `KLAUDE_PROXY_URL` y `KLAUDE_API_KEY`
-
-### Changed
-- `Klaus/config.py`: env var renombrado de `Klaus_BASE_URL` → `KLAUDE_PROXY_URL` (nombre explícito, autodocumentado)
-- `docs/configuration.md`: tabla "Valores recomendados por proveedor" reenfocada en klaude-proxy como backend primario
-
-**Files:** `Klaus/config.py`, `docs/configuration.md`, `CHANGELOG.md`
-**Issue:** [#36](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/36)
-**PR:** pending
-
----
-
-
-## [Unreleased] — Fase 16: Developer UX
-
-### Added
-- `repl.py`: `/tokens` REPL command — shows cumulative session token counts (input / output / total)
-- `repl.py`: Session-level token accumulation across turns (`session_input_tokens`, `session_output_tokens`)
-- `repl.py`: YOLO mode indicator in REPL welcome panel — shown when `--yolo` is active
-- `repl.py`: `yolo` parameter propagated through `run_repl` → `_print_welcome`
-- `cli.py`: `yolo` flag forwarded from `repl` command through `_repl_async` → `run_repl`
-- `repl.py`: `_run_turn` now returns `tuple[list, int, int]` — messages + per-turn token counts
-- `CHANGELOG.md`: this file
-
-**Files:** `Klaus/repl.py`, `Klaus/cli.py`, `CHANGELOG.md`
-**Issue:** [#31](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/31)
+- `_dispatch_tool`: invocación única de cada tool (un `TypeError` interno repetía los efectos); validación contra los schemas activos (MCP incluido); error accionable ante parámetros desconocidos ([#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57))
+- Auto-compactación basada en el tamaño real del contexto (antes se sumaban los turnos), sin `tool_result` huérfanos, también en turnos sin tools del REPL; `/tokens` ya no se pone a 0 al compactar ([#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57))
+- `klaus init` genera los mismos defaults que el modelo (`timeout_seconds`, `max_agent_depth`) ([#57](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/57))
+- MCP con `mcp` 2.x (`input_schema`); streaming OpenAI con `on_thinking`; portapapeles con ficheros en `read_image` ([#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54))
+- CI en verde: imports `klaus`, ruff y mypy ([#54](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/54))
+- `OpenAIAdapter` enviaba las tools sin convertir al formato OpenAI (Ollama/Qwen3) ([#48](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/48))
+- Parámetros requeridos validados antes de invocar el handler (bucle `read_file({})`) ([#50](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/50))
+- Documentación: `klaus run --no-stream` y `--mcp-config` no existen (eliminados de las guías); `docs/mcp.md` decía que MCP pide confirmación ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58), [#56](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/56))
 
 ---
 
@@ -134,7 +63,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `pyproject.toml`: PyPI metadata and `[project.optional-dependencies] dev` group
 
 **Files:** `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `pyproject.toml`
-**Issue:** [#29](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/29) · **PR:** [#30](https://github.com/Ka0s-Klaus/Klaus-code-cli/pull/30)
+**Issue:** [#29](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/29) · **PR:** [#30](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/30)
 
 ---
 
@@ -151,7 +80,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `pyproject.toml`: `[tool.pytest.ini_options]`, `[tool.ruff]`, `[tool.mypy]`
 
 **Files:** `tests/` (7 files), `pyproject.toml`
-**Issue:** [#27](https://github.com/Ka0s-Klaus/Klaus-code-cli/issues/27) · **PR:** [#28](https://github.com/Ka0s-Klaus/Klaus-code-cli/pull/28)
+**Issue:** [#27](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/27) · **PR:** [#28](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/28)
 
 ---
 
