@@ -143,6 +143,7 @@ Los mismos checks que el CI (Python 3.11 / 3.12 / 3.13). Ver [🧪 Development](
 | [🔌 MCP](docs/mcp.md) | Servidores MCP externos |
 | [🏗️ Architecture](docs/architecture.md) | Módulos y flujo interno |
 | [🧪 Development](docs/development.md) | Entorno local, CI y release |
+| [🗺️ Roadmap](docs/roadmap.md) | Propuesta de producto: agente de código soberano en 4 fases |
 
 ---
 

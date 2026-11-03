@@ -1,5 +1,7 @@
 # 🗺️ Roadmap — Feature Parity con Claude Code
 
+> 📜 **Documento histórico.** Las fases 1-9 se completaron en [#46](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/46). La dirección de producto propuesta a partir de noviembre de 2026 está en [🗺️ Roadmap — Agente de código soberano](roadmap.md).
+
 ## 🤔 ¿Qué hago? ¿Cómo lo hago? ¿Y para qué lo hago?
 
 **¿Qué hago?** Analizo la brecha de funcionalidades entre Klaus Code CLI y Claude Code (el CLI oficial de Anthropic), y propongo un roadmap priorizado para alcanzar la paridad o superarla.
