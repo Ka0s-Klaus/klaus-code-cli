@@ -149,18 +149,31 @@ Modelos decididos el 4 de noviembre de 2026 ([#75](https://github.com/Ka0s-Klaus
 | `claude-opus-5-5` | Externo | klaude-proxy (formato Anthropic) |
 | `claude-sonnet-5-5` | Externo | klaude-proxy (formato Anthropic) |
 | `claude-haiku-5-5` | Externo | klaude-proxy (formato Anthropic) |
-| `llama3.3` | Local | Ollama directo (formato OpenAI) |
+| `qwen3:14b` | Local | Ollama directo (formato OpenAI) |
+
+El modelo local se cambió de llama3.3 (70B, ~43 GB) a `qwen3:14b` para que el baseline se pueda ejecutar en una máquina de 32 GB.
 
 ### Requisitos
 
 - **API key de la Claude Console** para los modelos de Anthropic, exportada como `KLAUS_API_KEY` (o la que espere vuestro klaude-proxy). Una suscripción de claude.ai (Pro, Max) no da acceso a la API.
-- **Ollama** con el modelo descargado: `ollama pull llama3.3`. Es un modelo de 70B parámetros: en su cuantización por defecto ocupa unos 43 GB y necesita esa memoria disponible (RAM unificada o VRAM). En una máquina sin esa memoria no es representativo.
+- **klaude-proxy**, de una de estas dos formas:
+  - **Como endpoint** (`http://<host>:8080/v1`): `KLAUS_PROXY_URL` o `provider.base_url` en `config.yaml`.
+  - **Como proxy de reenvío** (por ejemplo, en `localhost:8899`): la URL es la de la API y el tráfico pasa por el proxy. httpx respeta `HTTPS_PROXY`; si el proxy intercepta TLS, añade su CA con `SSL_CERT_FILE`:
+
+    ```bash
+    export HTTPS_PROXY=http://localhost:8899
+    export SSL_CERT_FILE=~/.mitmproxy/mitmproxy-ca-cert.pem   # solo si intercepta TLS
+    export EXTERNAL_URL=https://api.anthropic.com/v1
+    ```
+
+    En este modo Klaus ve una URL de proveedor directo y avisa de que no configura el seudonimizador. En la batería no importa (los datos son ficticios).
+- **Ollama** con el modelo descargado: `ollama pull qwen3:14b`. Son 14,8B parámetros: en Q4_K_M ocupa unos 9 GB y funciona con 16 GB de memoria disponible. El tráfico a Ollama es `http://localhost` y no pasa por `HTTPS_PROXY`.
 - `provider.max_tokens` ≥ 16000 (el valor por defecto). Con menos, los modelos que razonan cortan sus respuestas y el baseline mide el límite, no el modelo.
-- Para que el seudonimizador trate llama3.3 como local, añádelo en `~/.klaus/config.yaml`:
+- Para que el seudonimizador trate qwen3 como local, añádelo en `~/.klaus/config.yaml`:
 
   ```yaml
   pseudonymizer:
-    local_models: ["kdev*", "ollama/*", "ollama_chat/*", "llama3.3*"]
+    local_models: ["kdev*", "ollama/*", "ollama_chat/*", "qwen3*"]
   ```
 
 ### Ejecución
@@ -170,14 +183,14 @@ evals/run_baseline.sh            # los 4 modelos, 3 repeticiones, JSON en evals/
 evals/run_baseline.sh -n 1       # pasada rápida para comprobar que todo conecta
 ```
 
-El script ejecuta, para cada modelo, `klaus eval -m <modelo> -n 3 -o evals/results/<fecha>-<modelo>.json`. Para llama3.3 añade `--base-url http://localhost:11434/v1` y `KLAUS_API_FORMAT=openai` (se pueden cambiar con `OLLAMA_URL`).
+El script ejecuta, para cada modelo, `klaus eval -m <modelo> -n 3 -o evals/results/<fecha>-<modelo>.json`. Para el modelo local añade `--base-url http://localhost:11434/v1` y `KLAUS_API_FORMAT=openai` (se pueden cambiar con `OLLAMA_URL`).
 
 ### Cómo leer los resultados
 
 - **Mismos parámetros que un usuario:** Klaus no fija el nivel de esfuerzo, así que cada modelo usa su valor por defecto (Opus 5.5 y Haiku 5.5: `medium`; Sonnet 5.5: `high`). El baseline mide Klaus tal como se usa hoy.
 - Coste orientativo para 12 tareas × 3 repeticiones, suponiendo unos 100 000 tokens de entrada y 5 000 de salida por ejecución: Opus 5.5 ~18 $, Sonnet 5.5 ~9 $, Haiku 5.5 < 1 $. El JSON trae los tokens reales.
 - Versiona los JSON en `evals/results/` mediante un PR: llevan la fecha, el modelo, la versión de Klaus y el commit de la batería (`meta`). Compara siempre con la **misma versión de la batería**.
-- **Gate 2** (Fase 2): llama3.3 debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
+- **Gate 2** (Fase 2): qwen3:14b debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
 
 ---
 

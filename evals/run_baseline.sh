@@ -7,13 +7,17 @@
 #   MODELS="claude-haiku-5-5" evals/run_baseline.sh -n 1
 #
 # Variables:
-#   MODELS       modelos externos (vía klaude-proxy, formato Anthropic; "" para omitirlos)
+#   MODELS       modelos externos (formato Anthropic; "" para omitirlos)
+#   EXTERNAL_URL base URL de los modelos externos (por defecto, la de KLAUS_PROXY_URL
+#                o config.yaml). Con un proxy de reenvío: https://api.anthropic.com/v1
+#                y HTTPS_PROXY=http://localhost:8899
 #   LOCAL_MODEL  modelo local en Ollama ("" para omitirlo)
 #   OLLAMA_URL   endpoint OpenAI-compatible de Ollama
 #   OUT_DIR      directorio de resultados
 #
 # Requisitos: KLAUS_API_KEY de la Claude Console (no vale una suscripción Pro),
-# klaude-proxy accesible (KLAUS_PROXY_URL o config.yaml) y `ollama pull llama3.3`.
+# klaude-proxy accesible (endpoint /v1 o proxy de reenvío vía HTTPS_PROXY) y
+# `ollama pull qwen3:14b`.
 # Ver docs/evaluation.md#-baseline-gate-0-del-roadmap
 set -euo pipefail
 
@@ -26,7 +30,8 @@ while getopts "n:" opt; do
 done
 
 MODELS="${MODELS-claude-opus-5-5 claude-sonnet-5-5 claude-haiku-5-5}"  # MODELS="" omite los externos
-LOCAL_MODEL="${LOCAL_MODEL-llama3.3}"
+LOCAL_MODEL="${LOCAL_MODEL-qwen3:14b}"
+EXTERNAL_URL="${EXTERNAL_URL:-}"
 OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434/v1}"
 OUT_DIR="${OUT_DIR:-evals/results}"
 STAMP="$(date +%Y-%m-%d)"
@@ -40,7 +45,8 @@ klaus eval --verify-tasks
 status=0
 for model in $MODELS; do
   echo "── $model ──"
-  klaus eval -m "$model" -n "$REPEAT" -o "$OUT_DIR/$STAMP-$model.json" || status=1
+  klaus eval -m "$model" ${EXTERNAL_URL:+--base-url "$EXTERNAL_URL"} \
+    -n "$REPEAT" -o "$OUT_DIR/$STAMP-$model.json" || status=1
 done
 
 if [ -n "$LOCAL_MODEL" ]; then
