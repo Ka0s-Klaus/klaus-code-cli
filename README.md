@@ -48,7 +48,7 @@ git clone https://github.com/Ka0s-Klaus/klaus-code-cli.git
 cd klaus-code-cli
 pip install -e .
 
-klaus init                                        # crea ~/.klaus/config.yaml
+klaus init                                        # crea ~/.klaus/config.yaml (--profile dev|cliente|ci)
 export KLAUS_PROXY_URL="http://<host>:8080/v1"    # tu klaude-proxy
 export KLAUS_API_KEY="sk-ant-..."                 # si tu proxy la requiere
 klaus config show                                 # verificar

@@ -19,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Pseudonymizer**: aplicado en `run`, `repl`, `/model` y `spawn_agent`; los modelos LiteLLM externos ya no se tratan como locales; se espera antes de la primera petición; con un proveedor directo no se envían los literales al tercero ([#55](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/55))
 
 ### Added
+- `klaus init --profile dev|cliente|ci`: genera `config.yaml` con la configuración recomendada por entorno de [🔐 Security](docs/security.md#️-configuración-recomendada-por-entorno) (`dev` por defecto, sin cambios) ([#77](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/77))
 - **Paridad de funcionalidades (fases 1-9)**: `/model`, `--resume`, `web_fetch`/`web_search`, `todo_write`/`todo_read` + `/todos`, hooks Pre/PostToolUse/Stop/Notification, `spawn_agent`, `read_image`, comandos slash personalizados, `memory_write`/`memory_read` + `/memory`, checkpoints + `--restore` ([#46](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/46))
 - Bloques de razonamiento (*thinking*) en tiempo real para modelos reasoning ([#44](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/44))
 - Integración con la API de configuración dinámica del pseudonymizer de klaude-proxy ([#53](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/53))

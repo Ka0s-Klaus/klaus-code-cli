@@ -299,3 +299,57 @@ security:
 #     env:
 #       GITHUB_TOKEN: "${GITHUB_TOKEN}"
 """
+
+
+# ── Perfiles de `klaus init` (#77) ───────────────────────────────────────────
+# Cada perfil es una lista de sustituciones exactas sobre DEFAULT_CONFIG_YAML, para
+# conservar sus comentarios. Reflejan docs/security.md#️-configuración-recomendada-por-entorno.
+
+_OUTSIDE_DENY = (
+    '  outside_workspace: "ask"\n',
+    '  outside_workspace: "deny"\n',
+)
+
+CONFIG_PROFILES: dict[str, tuple[str, list[tuple[str, str]]]] = {
+    "dev": ("Desarrollo local (valores por defecto)", []),
+    "cliente": (
+        "Equipo de un cliente / datos sensibles (sin --yolo)",
+        [
+            _OUTSIDE_DENY,
+            ('  project_hooks: "ask"\n', '  project_hooks: "never"   # o "ask", revisando cada hook\n'),
+            ("  required: false\n", "  required: true\n"),
+            (
+                '#     confirm: "auto"          # auto | always | never (ver docs/mcp.md)\n',
+                '#     confirm: "always"        # toda tool MCP pasa por una persona\n',
+            ),
+        ],
+    ),
+    "ci": (
+        "CI / automatización con --yolo",
+        [
+            _OUTSIDE_DENY,
+            ('  project_hooks: "ask"\n', '  project_hooks: "trust"   # solo si el repo es tuyo\n'),
+            (
+                "  bash_allowlist: []\n",
+                '  bash_allowlist: ["pytest", "ruff check", "mypy", "git status", "git diff"]\n',
+            ),
+            (
+                '#     confirm: "auto"          # auto | always | never (ver docs/mcp.md)\n',
+                '#     confirm: "always"        # con --yolo, en servidores con efectos\n',
+            ),
+        ],
+    ),
+}
+
+
+def config_yaml_for_profile(profile: str) -> str:
+    """YAML de `klaus init --profile <profile>`, con los comentarios del fichero por defecto."""
+    if profile not in CONFIG_PROFILES:
+        raise ValueError(f"perfil desconocido: {profile!r} (válidos: {', '.join(CONFIG_PROFILES)})")
+    description, replacements = CONFIG_PROFILES[profile]
+    text = DEFAULT_CONFIG_YAML
+    for old, new in replacements:
+        if text.count(old) != 1:
+            raise RuntimeError(f"perfil {profile!r}: {old.strip()!r} no aparece una sola vez en el YAML")
+        text = text.replace(old, new)
+    return f"# Perfil: {profile} — {description}. Ver docs/security.md\n" + text
