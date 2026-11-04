@@ -189,7 +189,7 @@ El script ejecuta, para cada modelo, `klaus eval -m <modelo> -n 3 -o evals/resul
 
 - **Mismos parámetros que un usuario:** Klaus no fija el nivel de esfuerzo, así que cada modelo usa su valor por defecto (Opus 5.5 y Haiku 5.5: `medium`; Sonnet 5.5: `high`). El baseline mide Klaus tal como se usa hoy.
 - Coste orientativo para 12 tareas × 3 repeticiones, suponiendo unos 100 000 tokens de entrada y 5 000 de salida por ejecución: Opus 5.5 ~18 $, Sonnet 5.5 ~9 $, Haiku 5.5 < 1 $. El JSON trae los tokens reales.
-- Versiona los JSON en `evals/results/` mediante un PR: llevan la fecha, el modelo, la versión de Klaus y el commit de la batería (`meta`). Compara siempre con la **misma versión de la batería**.
+- **Los JSON no se versionan** (`evals/results/` está en `.gitignore`): se quedan en la máquina que ejecuta el baseline. Lo que se versiona es el **resumen** en [📊 docs/reports/baseline.md](reports/baseline.md): tasa de éxito, turnos, tokens y tiempo por modelo y categoría, con la fecha, la versión de Klaus y el commit de la batería que trae el bloque `meta` de cada JSON. Compara siempre con la **misma versión de la batería**.
 - **Gate 2** (Fase 2): qwen3:30b debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
 
 ---
