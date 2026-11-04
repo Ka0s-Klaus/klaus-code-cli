@@ -36,3 +36,5 @@ htmlcov/
 # Batería de evaluación (#71): los proyectos de las tareas incluyen a propósito
 # directorios build/ y nombres con "secret" (datos ficticios). Se versionan enteros.
 !evals/tasks/**
+
+CLAUDE.md

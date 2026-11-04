@@ -149,9 +149,9 @@ Modelos decididos el 4 de noviembre de 2026 ([#75](https://github.com/Ka0s-Klaus
 | `claude-opus-5-5` | Externo | klaude-proxy (formato Anthropic) |
 | `claude-sonnet-5-5` | Externo | klaude-proxy (formato Anthropic) |
 | `claude-haiku-5-5` | Externo | klaude-proxy (formato Anthropic) |
-| `qwen3:14b` | Local | Ollama directo (formato OpenAI) |
+| `qwen3:30b` | Local | Ollama directo (formato OpenAI) |
 
-El modelo local se cambió de llama3.3 (70B, ~43 GB) a `qwen3:14b` para que el baseline se pueda ejecutar en una máquina de 32 GB.
+El modelo local se cambió de llama3.3 (70B, ~43 GB) a `qwen3:30b` para que el baseline se pueda ejecutar en una máquina de 32 GB. Es un MoE (30,5B parámetros, ~3B activos por token): en un M1 Pro resolvió `bugfix-duration-parser` en 313 s, mientras que `qwen3:14b` (denso) agotó el timeout de 600 s.
 
 ### Requisitos
 
@@ -167,7 +167,7 @@ El modelo local se cambió de llama3.3 (70B, ~43 GB) a `qwen3:14b` para que el b
     ```
 
     En este modo Klaus ve una URL de proveedor directo y avisa de que no configura el seudonimizador. En la batería no importa (los datos son ficticios).
-- **Ollama** con el modelo descargado: `ollama pull qwen3:14b`. Son 14,8B parámetros: en Q4_K_M ocupa unos 9 GB y funciona con 16 GB de memoria disponible. El tráfico a Ollama es `http://localhost` y no pasa por `HTTPS_PROXY`.
+- **Ollama** con el modelo descargado: `ollama pull qwen3:30b`. En Q4_K_M ocupa 18,6 GB; con 32k de contexto, unos 20 GB en la GPU. En un Mac de 32 GB cabe (100 % GPU) dejando unos 10 GB al sistema; si macOS limita la memoria de la GPU, súbelo con `sudo sysctl iogpu.wired_limit_mb=24576` (se pierde al reiniciar). El tráfico a Ollama es `http://localhost` y no pasa por `HTTPS_PROXY`.
 - `provider.max_tokens` ≥ 16000 (el valor por defecto). Con menos, los modelos que razonan cortan sus respuestas y el baseline mide el límite, no el modelo.
 - Para que el seudonimizador trate qwen3 como local, añádelo en `~/.klaus/config.yaml`:
 
@@ -190,7 +190,7 @@ El script ejecuta, para cada modelo, `klaus eval -m <modelo> -n 3 -o evals/resul
 - **Mismos parámetros que un usuario:** Klaus no fija el nivel de esfuerzo, así que cada modelo usa su valor por defecto (Opus 5.5 y Haiku 5.5: `medium`; Sonnet 5.5: `high`). El baseline mide Klaus tal como se usa hoy.
 - Coste orientativo para 12 tareas × 3 repeticiones, suponiendo unos 100 000 tokens de entrada y 5 000 de salida por ejecución: Opus 5.5 ~18 $, Sonnet 5.5 ~9 $, Haiku 5.5 < 1 $. El JSON trae los tokens reales.
 - Versiona los JSON en `evals/results/` mediante un PR: llevan la fecha, el modelo, la versión de Klaus y el commit de la batería (`meta`). Compara siempre con la **misma versión de la batería**.
-- **Gate 2** (Fase 2): qwen3:14b debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
+- **Gate 2** (Fase 2): qwen3:30b debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
 
 ---
 

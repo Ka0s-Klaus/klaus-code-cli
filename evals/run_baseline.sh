@@ -17,7 +17,7 @@
 #
 # Requisitos: KLAUS_API_KEY de la Claude Console (no vale una suscripción Pro),
 # klaude-proxy accesible (endpoint /v1 o proxy de reenvío vía HTTPS_PROXY) y
-# `ollama pull qwen3:14b`.
+# `ollama pull qwen3:30b`.
 # Ver docs/evaluation.md#-baseline-gate-0-del-roadmap
 set -euo pipefail
 
@@ -30,7 +30,7 @@ while getopts "n:" opt; do
 done
 
 MODELS="${MODELS-claude-opus-5-5 claude-sonnet-5-5 claude-haiku-5-5}"  # MODELS="" omite los externos
-LOCAL_MODEL="${LOCAL_MODEL-qwen3:14b}"
+LOCAL_MODEL="${LOCAL_MODEL-qwen3:30b}"
 EXTERNAL_URL="${EXTERNAL_URL:-}"
 OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434/v1}"
 OUT_DIR="${OUT_DIR:-evals/results}"
