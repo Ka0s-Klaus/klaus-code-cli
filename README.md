@@ -144,6 +144,7 @@ Los mismos checks que el CI (Python 3.11 / 3.12 / 3.13). Ver [🧪 Development](
 | [🏗️ Architecture](docs/architecture.md) | Módulos y flujo interno |
 | [🧪 Development](docs/development.md) | Entorno local, CI y release |
 | [📏 Evaluation](docs/evaluation.md) | Batería de tareas y `klaus eval` para medir el agente |
+| [📊 Baseline](docs/reports/baseline.md) | Resultados del baseline de la batería por modelo |
 | [🗺️ Roadmap](docs/roadmap.md) | Propuesta de producto: agente de código soberano en 4 fases |
 
 ---
