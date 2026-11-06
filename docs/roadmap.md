@@ -80,7 +80,7 @@ Cada fase termina en un **gate** con un criterio comprobable. Sin gate superado,
     - La batería de evaluación se ejecuta como job semanal y en los PRs que toquen `agent.py`, `tools/` o los prompts.
 3. **Primera release `v0.16.0`**
     - ~~Fichero `LICENSE`~~ ✅ MIT, © Ka0s.
-    - Tag y publicación por el workflow existente, que ya verifica que el tag coincide con la versión.
+    - ~~Versión y CHANGELOG~~ ✅ [#79](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/79). Falta el tag `v0.16.0`, que publica en PyPI por el workflow existente (comprueba que el tag coincide con la versión).
 4. **Limpieza:** ~~implementar `--mcp-config`~~ ✅ [#70](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/70); ~~que `klaus init` ofrezca perfiles (`dev`, `cliente`, `ci`)~~ ✅ `klaus init --profile` ([#77](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/77)), basados en [🔐 Security](security.md#️-configuración-recomendada-por-entorno).
 
 **Gate 0:** baseline publicado en 2 modelos y `v0.16.0` instalable.

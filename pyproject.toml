@@ -1,20 +1,20 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "klaus-code-cli"
-version = "0.15.0"
+version = "0.16.0"
 description = "Klaus Code CLI — agente de codificación agnóstico de proveedor"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "Ka0s-Klaus", email = "santacana.canton@icloud.com"}]
 keywords = ["ai", "cli", "coding-assistant", "llm", "agent"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

@@ -7,7 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-> Agrupa todo lo fusionado desde la Fase 15. Las versiones `0.x` anteriores son fases de desarrollo: nunca se etiquetaron ni publicaron (ver [🧪 Development](docs/development.md#-release)).
+---
+
+## [0.16.0] — 2026-11-06
+
+> 🎉 **Primera release publicada.** Agrupa todo lo fusionado desde la Fase 15. Las versiones `0.x` anteriores son fases de desarrollo: nunca se etiquetaron ni publicaron (ver [🧪 Development](docs/development.md#-release)).
 
 ### Security
 - **Tools MCP con confirmación**: antes se ejecutaban siempre sin preguntar (la documentación decía lo contrario). Política por servidor `mcp_servers[].confirm` = `auto` (default: pregunta salvo solo lectura o `--allow-writes`/`--yolo`) | `always` (también en YOLO) | `never`; `trust_read_only` para `readOnlyHint`. Sin TTY se deniega lo que requiere confirmación ([#61](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/61))
@@ -38,6 +42,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Tests: de 41 a más de 250 (seguridad, pseudonymizer, bucle del agente, compatibilidad)
 
 ### Changed
+- Metadatos del paquete: licencia como expresión SPDX (`license = "MIT"` + `license-files`) en lugar de la tabla TOML y el classifier, obsoletos en setuptools ≥ 77 (dejarían de construir en febrero de 2027); `setuptools>=77` ([#79](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/79))
 - `provider.max_tokens` por defecto: 4096 → 16000. Los modelos con razonamiento (Opus/Sonnet 5.5) consumen ese límite pensando y cortaban las respuestas ([#75](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/75))
 - **Nombres unificados en `klaus`** ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58)): `~/.klaus/`, `<proyecto>/.klaus/`, variables `KLAUS_*`, clave `context.max_klaus_md_tokens`, comando `klaus` en toda la documentación
 - `klaus init --scan` genera `KLAUS.md` (antes `CLAUS.md`, que el contexto **no cargaba**) ([#58](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/58))

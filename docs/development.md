@@ -86,7 +86,9 @@ La versión tiene **una sola fuente de verdad**: `[project].version` en `pyproje
 2. Tras el merge: `git tag vX.Y.Z && git push origin vX.Y.Z`
 3. `.github/workflows/release.yml` **comprueba que el tag coincide** con la versión de `pyproject.toml` (si no, falla) y publica en PyPI por OIDC (trusted publishing, sin tokens)
 
-> ℹ️ Las versiones `0.x` del CHANGELOG hasta `0.15.0` son **fases de desarrollo** y nunca se etiquetaron ni publicaron. La primera release real será la primera que se etiquete.
+> ℹ️ Las versiones `0.x` del CHANGELOG hasta `0.15.0` son **fases de desarrollo** y nunca se etiquetaron ni publicaron. La primera release real es `0.16.0` ([#79](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/79)).
+>
+> ⚠️ La publicación usa *trusted publishing*: el proyecto tiene que estar dado de alta en PyPI como *publisher* de `release.yml` con el entorno `release`. Sin eso, el build pasa y la subida a PyPI falla.
 
 ---
 
