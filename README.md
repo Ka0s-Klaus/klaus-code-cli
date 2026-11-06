@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/referencia, agente/herramientas]
+---
+
 # 🤖 Klaus Code CLI
 
 > **Agente de codificación agnóstico de proveedor.** Conecta cualquier modelo (Anthropic, OpenAI, local vía LiteLLM/Ollama) con tu código desde la terminal, con confirmaciones, límites de seguridad y seudonimización de datos.

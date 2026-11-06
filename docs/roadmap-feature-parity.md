@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/referencia, agente/roadmap]
+---
+
 # 🗺️ Roadmap — Feature Parity con Claude Code
 
 > 📜 **Documento histórico.** Las fases 1-9 se completaron en [#46](https://github.com/Ka0s-Klaus/klaus-code-cli/pull/46). La dirección de producto propuesta a partir de noviembre de 2026 está en [🗺️ Roadmap — Agente de código soberano](roadmap.md).

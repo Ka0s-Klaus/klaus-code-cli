@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/reporte, agente/evaluacion]
+---
+
 # 📊 Baseline de la batería de evaluación
 
 ## 📋 Contexto

@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/guia, agente/herramientas]
+---
+
 # 📚 Guía de Estilo de Documentación
 
 Este documento define el estándar de formato para toda la documentación del proyecto **Klaus Code CLI** a partir de septiembre 2026.

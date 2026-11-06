@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/referencia, agente/herramientas]
+---
+
 # 🔐 Seguridad
 
 > **Qué protege Klaus, qué no protege y cómo configurarlo para cada entorno.** Léelo antes de usar `--yolo` o de desplegar Klaus en el equipo de un cliente.

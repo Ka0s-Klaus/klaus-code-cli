@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/referencia, agente/roadmap]
+---
+
 # 🗺️ Roadmap — Agente de código soberano
 
 > **Estado: aprobado** el 3 de noviembre de 2026 ([#69](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/69)). Sustituye como dirección de producto al [roadmap de paridad con Claude Code](roadmap-feature-parity.md), cuyas fases 1-9 ya están completadas.
