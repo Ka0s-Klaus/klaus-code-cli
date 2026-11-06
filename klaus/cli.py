@@ -14,7 +14,7 @@ from rich.spinner import Spinner
 from rich.table import Table
 
 from . import __version__
-from .config import CONFIG_PATH, DEFAULT_CONFIG_YAML, KlausConfig, load_config
+from .config import CONFIG_PATH, CONFIG_PROFILES, KlausConfig, config_yaml_for_profile, load_config
 from .provider.base import ProviderAdapter
 
 app = typer.Typer(
@@ -144,16 +144,31 @@ async def _run_async(prompt: str, config: KlausConfig, project_root: Path) -> in
 @app.command()
 def init(
     scan: bool = typer.Option(False, "--scan", help="Explora el proyecto y genera KLAUS.md"),
+    profile: str = typer.Option(
+        "dev", "--profile", "-p",
+        help="Perfil de seguridad: dev (local) | cliente (datos sensibles) | ci (automatización)",
+    ),
 ) -> None:
-    """Crea ~/.klaus/config.yaml con valores por defecto. Con --scan, genera KLAUS.md."""
+    """Crea ~/.klaus/config.yaml con el perfil elegido (dev por defecto). Con --scan, genera KLAUS.md."""
+    if profile not in CONFIG_PROFILES:
+        console.print(f"[red]Perfil desconocido:[/red] {profile} (válidos: {', '.join(CONFIG_PROFILES)})")
+        raise typer.Exit(2)
+
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     if CONFIG_PATH.exists():
         console.print(f"[yellow]⚠️[/yellow]  {CONFIG_PATH} ya existe — no se sobreescribe")
+        if profile != "dev":
+            console.print(
+                f"[dim]Para aplicar el perfil '{profile}', mueve o borra el fichero y repite `klaus init`[/dim]"
+            )
         console.print("[dim]Usa `klaus config show` para ver la configuración activa[/dim]")
     else:
-        CONFIG_PATH.write_text(DEFAULT_CONFIG_YAML, encoding="utf-8")
-        console.print(f"[green]✅[/green]  Configuración creada en [bold]{CONFIG_PATH}[/bold]")
+        CONFIG_PATH.write_text(config_yaml_for_profile(profile), encoding="utf-8")
+        console.print(
+            f"[green]✅[/green]  Configuración creada en [bold]{CONFIG_PATH}[/bold] "
+            f"(perfil [bold]{profile}[/bold]: {CONFIG_PROFILES[profile][0]})"
+        )
         console.print("[dim]Edita base_url para apuntar a tu proxy (default: http://localhost:8080/v1)[/dim]")
 
     if scan:

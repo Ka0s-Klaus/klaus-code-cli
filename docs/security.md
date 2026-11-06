@@ -91,6 +91,8 @@ Los hooks se ejecutan como subproceso asíncrono, con un timeout de 10 s, sin bl
 
 ## ⚙️ Configuración recomendada por entorno
 
+`klaus init --profile <dev|cliente|ci>` genera cada una de estas configuraciones ([#77](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/77)). Los servidores MCP siguen siendo cosa tuya: el perfil solo deja el ejemplo comentado con el `confirm` recomendado.
+
 **💻 Desarrollo local (default):** nada que tocar.
 
 ```yaml

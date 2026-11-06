@@ -54,10 +54,20 @@ uv run --with klaus-code-cli klaus run "hola"
 ### 1️⃣ Generar config por defecto
 
 ```bash
-klaus init
+klaus init                      # perfil dev (desarrollo local, valores por defecto)
+klaus init --profile cliente    # equipo de un cliente / datos sensibles
+klaus init --profile ci         # CI / automatización con --yolo
 ```
 
-Crea `~/.klaus/config.yaml` con todos los valores por defecto. El fichero es seguro para editar — sin credenciales embebidas.
+Crea `~/.klaus/config.yaml` con todos los valores, comentados. El fichero es seguro para editar — sin credenciales embebidas. Si ya existe, no se toca: para cambiar de perfil, muévelo y repite `klaus init`.
+
+| Perfil | Qué cambia respecto a `dev` |
+|---|---|
+| 💻 `dev` | nada |
+| 🏢 `cliente` | `outside_workspace: deny`, `project_hooks: never`, `pseudonymizer.required: true`, ejemplo MCP con `confirm: always` |
+| 🤖 `ci` | `outside_workspace: deny`, `project_hooks: trust`, `bash_allowlist` con `pytest`, `ruff check`, `mypy`, `git status`, `git diff` |
+
+El porqué de cada ajuste está en [🔐 Security](security.md#️-configuración-recomendada-por-entorno).
 
 ### 2️⃣ Configurar la API key
 

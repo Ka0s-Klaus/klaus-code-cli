@@ -16,7 +16,7 @@
 ~/.klaus/config.yaml
 ```
 
-Creado automáticamente por `klaus init`. Si no existe, Klaus usa los valores por defecto de cada sección.
+Creado automáticamente por `klaus init` (perfiles `dev`, `cliente` y `ci`: ver [⚙️ Instalación](installation.md#1️⃣-generar-config-por-defecto)). Si no existe, Klaus usa los valores por defecto de cada sección.
 
 > ♻️ **Migración desde `~/.Klaus`:** si solo existe el directorio con el nombre anterior, Klaus lo sigue usando y avisa al arrancar con el comando exacto para renombrarlo (`mv ~/.Klaus ~/.klaus`). Lo mismo con `<proyecto>/.Klaus`. Klaus nunca mueve tus datos automáticamente. En macOS (sistema de ficheros sin distinción de mayúsculas) ambos nombres son el mismo directorio y no hay nada que hacer.
 >
