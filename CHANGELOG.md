@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/release, agente/herramientas]
+---
+
 # Changelog — Klaus Code CLI
 
 All notable changes are documented here.

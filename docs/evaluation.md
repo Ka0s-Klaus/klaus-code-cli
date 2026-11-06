@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/referencia, agente/evaluacion]
+---
+
 # 📏 Evaluación
 
 > **Cómo medir la calidad del agente con la batería de tareas y `klaus eval`.** Es el primer entregable de la [Fase 0 del roadmap](roadmap.md).

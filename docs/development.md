@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/guia, agente/configuracion]
+---
+
 # 🧪 Desarrollo y CI
 
 > **Cómo reproducir en local exactamente lo que valida el CI.** Si estos tres comandos pasan en tu máquina, el PR pasará los checks.
@@ -82,7 +86,7 @@ ruff check . && mypy . && pytest tests/ -q && klaus eval --verify-tasks
 
 La versión tiene **una sola fuente de verdad**: `[project].version` en `pyproject.toml`. `klaus.__version__` la lee de los metadatos del paquete instalado.
 
-1. PR que sube `version` en `pyproject.toml` y mueve `[Unreleased]` del CHANGELOG a `[X.Y.Z] — fecha`
+1. PR que sube `version` en `pyproject.toml` y mueve `[Unreleased]` del [[CHANGELOG]] a `[X.Y.Z] — fecha`
 2. Tras el merge: `git tag vX.Y.Z && git push origin vX.Y.Z`
 3. `.github/workflows/release.yml` **comprueba que el tag coincide** con la versión de `pyproject.toml` (si no, falla) y publica en PyPI por OIDC (trusted publishing, sin tokens)
 

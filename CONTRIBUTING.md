@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/guia, agente/herramientas]
+---
+
 # 🤝 Contribuir a Klaus Code CLI
 
 > **Ningún cambio llega a `main` sin issue, rama y PR aprobado por una persona.** Esta guía explica el flujo y las convenciones del proyecto.

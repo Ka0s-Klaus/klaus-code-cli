@@ -1,3 +1,7 @@
+---
+tags: [proyecto/klaus-code-cli, tipo/guia, agente/herramientas]
+---
+
 # 💡 Uso
 
 ## 🤔 ¿Qué hago? ¿Cómo lo hago? ¿Y para qué lo hago?
