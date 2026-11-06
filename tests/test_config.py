@@ -8,7 +8,7 @@ from klaus.config import KlausConfig, load_config
 def test_default_config():
     cfg = KlausConfig()
     assert cfg.provider.api_format == "anthropic"
-    assert cfg.provider.max_tokens == 4096
+    assert cfg.provider.max_tokens == 16000  # modelos con razonamiento (#75)
     assert cfg.behavior.auto_approve_writes is False
     assert cfg.behavior.streaming is True
     assert cfg.session.persist is True

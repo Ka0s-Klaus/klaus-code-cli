@@ -142,14 +142,55 @@ checks:
 
 ## 📈 Baseline (Gate 0 del roadmap)
 
-Requiere acceso a los modelos, así que lo ejecuta el equipo, no el CI:
+Modelos decididos el 4 de noviembre de 2026 ([#75](https://github.com/Ka0s-Klaus/klaus-code-cli/issues/75)):
+
+| Modelo | Tipo | Cómo se accede |
+|---|---|---|
+| `claude-opus-5-5` | Externo | klaude-proxy (formato Anthropic) |
+| `claude-sonnet-5-5` | Externo | klaude-proxy (formato Anthropic) |
+| `claude-haiku-5-5` | Externo | klaude-proxy (formato Anthropic) |
+| `qwen3:30b` | Local | Ollama directo (formato OpenAI) |
+
+El modelo local se cambió de llama3.3 (70B, ~43 GB) a `qwen3:30b` para que el baseline se pueda ejecutar en una máquina de 32 GB. Es un MoE (30,5B parámetros, ~3B activos por token): en un M1 Pro resolvió `bugfix-duration-parser` en 313 s, mientras que `qwen3:14b` (denso) agotó el timeout de 600 s.
+
+### Requisitos
+
+- **API key de la Claude Console** para los modelos de Anthropic, exportada como `KLAUS_API_KEY` (o la que espere vuestro klaude-proxy). Una suscripción de claude.ai (Pro, Max) no da acceso a la API.
+- **klaude-proxy**, de una de estas dos formas:
+  - **Como endpoint** (`http://<host>:8080/v1`): `KLAUS_PROXY_URL` o `provider.base_url` en `config.yaml`.
+  - **Como proxy de reenvío** (por ejemplo, en `localhost:8899`): la URL es la de la API y el tráfico pasa por el proxy. httpx respeta `HTTPS_PROXY`; si el proxy intercepta TLS, añade su CA con `SSL_CERT_FILE`:
+
+    ```bash
+    export HTTPS_PROXY=http://localhost:8899
+    export SSL_CERT_FILE=~/.mitmproxy/mitmproxy-ca-cert.pem   # solo si intercepta TLS
+    export EXTERNAL_URL=https://api.anthropic.com/v1
+    ```
+
+    En este modo Klaus ve una URL de proveedor directo y avisa de que no configura el seudonimizador. En la batería no importa (los datos son ficticios).
+- **Ollama** con el modelo descargado: `ollama pull qwen3:30b`. En Q4_K_M ocupa 18,6 GB; con 32k de contexto, unos 20 GB en la GPU. En un Mac de 32 GB cabe (100 % GPU) dejando unos 10 GB al sistema; si macOS limita la memoria de la GPU, súbelo con `sudo sysctl iogpu.wired_limit_mb=24576` (se pierde al reiniciar). El tráfico a Ollama es `http://localhost` y no pasa por `HTTPS_PROXY`.
+- `provider.max_tokens` ≥ 16000 (el valor por defecto). Con menos, los modelos que razonan cortan sus respuestas y el baseline mide el límite, no el modelo.
+- Para que el seudonimizador trate qwen3 como local, añádelo en `~/.klaus/config.yaml`:
+
+  ```yaml
+  pseudonymizer:
+    local_models: ["kdev*", "ollama/*", "ollama_chat/*", "qwen3*"]
+  ```
+
+### Ejecución
 
 ```bash
-klaus eval -m <modelo-externo> -n 3 -o results/baseline-externo.json
-klaus eval -m <modelo-local>   -n 3 -o results/baseline-local.json
+evals/run_baseline.sh            # los 4 modelos, 3 repeticiones, JSON en evals/results/
+evals/run_baseline.sh -n 1       # pasada rápida para comprobar que todo conecta
 ```
 
-Guarda los JSON con la fecha y el commit de la batería (van en `meta`). Compara siempre con la **misma versión de la batería**.
+El script ejecuta, para cada modelo, `klaus eval -m <modelo> -n 3 -o evals/results/<fecha>-<modelo>.json`. Para el modelo local añade `--base-url http://localhost:11434/v1` y `KLAUS_API_FORMAT=openai` (se pueden cambiar con `OLLAMA_URL`).
+
+### Cómo leer los resultados
+
+- **Mismos parámetros que un usuario:** Klaus no fija el nivel de esfuerzo, así que cada modelo usa su valor por defecto (Opus 5.5 y Haiku 5.5: `medium`; Sonnet 5.5: `high`). El baseline mide Klaus tal como se usa hoy.
+- Coste orientativo para 12 tareas × 3 repeticiones, suponiendo unos 100 000 tokens de entrada y 5 000 de salida por ejecución: Opus 5.5 ~18 $, Sonnet 5.5 ~9 $, Haiku 5.5 < 1 $. El JSON trae los tokens reales.
+- **Los JSON no se versionan** (`evals/results/` está en `.gitignore`): se quedan en la máquina que ejecuta el baseline. Lo que se versiona es el **resumen** en [📊 docs/reports/baseline.md](reports/baseline.md): tasa de éxito, turnos, tokens y tiempo por modelo y categoría, con la fecha, la versión de Klaus y el commit de la batería que trae el bloque `meta` de cada JSON. Compara siempre con la **misma versión de la batería**.
+- **Gate 2** (Fase 2): qwen3:30b debe alcanzar ≥ 70 % de la tasa de éxito del mejor modelo externo.
 
 ---
 
